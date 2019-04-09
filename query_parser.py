@@ -5,21 +5,20 @@ from nltk.tokenize import word_tokenize
 
 stemmer = PorterStemmer()
 
-def insertSpaceBeforeAndAfterBrackets(queryString):
-    pat = re.compile(r"([()])")
-    return pat.sub(" \\1 ", queryString)
-
-def queryStringToTermsList(queryString):
-	# Replace all non-alphanum, non-space chars in each query with space
-	tokens = []
-	new_query = []
-	for c in queryString:
-		if c.isalnum() or c.isspace():
-			new_query.append(c)
-		else:
-			new_query.append(' ')
-	new_query = ''.join(new_query)
-	tokens.extend([token.lower() for token in word_tokenize(new_query)])
-
-        #Query string will be split and have each individual terms stemmed with PorterStemmer
-        return [stemmer.stem(word) for word in tokens]
+def queryStringToPhraseAndTermsList(queryString):
+    #Retrieves terms and phrases from query string
+    termsAndPhraseList = queryString.split('"')
+    termsList = []
+    for i in range(len(termsAndPhraseList)):
+        if i%2:
+            # Every odd index is a phrase, we are going to add that in as a term
+            phraseTerm = termsAndPhraseList[i]
+            stemmedTerms = []
+            for term in phraseTerm.split():
+                stemmedTerms.append(stemmer.stem(term.lower()))
+            termsList.append(' '.join(stemmedTerms))
+        elif termsAndPhraseList[i] != "":
+            # Every even index consist of terms and "AND" operators
+            # We are only interested in the terms here
+            termsList.extend([stemmer.stem(word.lower()) for word in termsAndPhraseList[i].split() if word != "AND" ])
+    return termsList

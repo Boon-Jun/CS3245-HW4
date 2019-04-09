@@ -8,9 +8,9 @@ import search_logic
 import time
 
 def usage():
-    print "usage: " + sys.argv[0] + " -d dictionary-file -p postings-file -l lengths-file -q file-of-queries -o output-file-of-results"
+    print "usage: " + sys.argv[0] + " -d dictionary-file -p postings-file -q file-of-queries -o output-file-of-results"
 
-dictionary_file = postings_file = file_of_queries = output_file_of_results = lengths_file = None
+dictionary_file = postings_file = file_of_queries = output_file_of_results = None
 
 try:
     opts, args = getopt.getopt(sys.argv[1:], 'd:p:l:q:o:')
@@ -23,8 +23,6 @@ for o, a in opts:
         dictionary_file  = a
     elif o == '-p':
         postings_file = a
-    elif o == '-l':
-        lengths_file = a
     elif o == '-q':
         file_of_queries = a
     elif o == '-o':
@@ -32,7 +30,7 @@ for o, a in opts:
     else:
         assert False, "unhandled option"
 
-if dictionary_file == None or postings_file == None or lengths_file == None or file_of_queries == None or file_of_output == None :
+if dictionary_file == None or postings_file == None or file_of_queries == None or file_of_output == None :
     usage()
     sys.exit(2)
 
@@ -40,7 +38,7 @@ queriesFile = open(file_of_queries, "r")
 outputFile = open(file_of_output, "w")
 term_dict = pickle.load(open(dictionary_file, "rb"))
 postings = open(postings_file, "r")
-vector_lengths = pickle.load(open(lengths_file, "rb"))
+vector_lengths = pickle.load(open("lengths.txt", "rb"))
 
 for query in queriesFile:
     resultsList = search_logic.executeSearch(query, term_dict, postings, vector_lengths)
