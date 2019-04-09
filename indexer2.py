@@ -1,27 +1,50 @@
+import csv
 import nltk
 from nltk.tokenize import word_tokenize, sent_tokenize
+from nltk.util import bigrams
 from os import listdir
 from os.path import join, isfile
 import pickle
 import math
 
-def index(input_directory, output_file_dictionary, output_file_postings):
-	# all document ids sorted by id
-	doc_ids = [int(d) for d in listdir(input_directory) if isfile(join(input_directory, d))]
+def index(input_file, output_file_dictionary, output_file_postings):
+	
+	# List of document_ids of all docs
+	doc_ids = []
+	# Map document_id to dictionaries of documents
+	documents = {}
+	
+	# Store each document as a dictionary whose keys are the fields
+	# of the document.
+	with open(input_file, "r") as csv_file:
+		csv_reader = csv.DictReader(csv_file)
+		line_count = 0
+		for row in csv_reader:
+			doc_ids.append(int(row['document_id']))
+			documents[str(row['document_id'])] = row
+			# print(doc_ids[line_count])
+			# print(documents[str(row['document_id'])])
+			line_count += 1
+	
 	doc_ids.sort()
+
 	# Every term in the dictionary is mapped to a tuple (byte_offset, doc_freq)
 	dictionary = {}
 	# Every term in the index is mapped to a postings list
 	index = {}
 	# Every doc_id is mapped to document vector length
 	lengths = {}
-	# For every word in every document, add the document_id of the occuring word 
-	# to the respective posting list in the index. If word is new, add new key 
+
+	# For every term in every document, add the document_id of the occuring term
+	# to the respective posting list in the index. If term is new, add new key 
 	# in dictionary and index
 	for doc_id in doc_ids:
+		# Combine all fields in doc into one text
+		document = documents[str(doc_id)]
+		text = ""
+		for field in document:
+			text = " ".join((text, document[field]))
 		#### Preprocess Text ###
-		doc = open(join(input_directory, str(doc_id)), "r")	
-		text = doc.read()
 		text = text.replace('\n', ' ')
 		# tokenize
 		sentences = sent_tokenize(text)
@@ -42,6 +65,11 @@ def index(input_directory, output_file_dictionary, output_file_postings):
 		# stem the tokens
 		ps = nltk.stem.PorterStemmer()
 		stemmed_tokens = [ps.stem(token) for token in tokens]
+		
+		# Augment list of tokens with 2-word and 3-word phrases
+		#for bigram in bigrams(stemmed_tokens):
+			
+
 		# maps every unique term in doc to its frequency
 		term_to_freq = {}
 		for term in stemmed_tokens:
@@ -111,4 +139,13 @@ def index(input_directory, output_file_dictionary, output_file_postings):
 	pickle.dump(lengths, lengths_file)
 	lengths_file.flush()
 	lengths_file.close()
+
+				
 	
+	
+	
+	
+
+
+
+
