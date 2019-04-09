@@ -1,7 +1,7 @@
 import csv
 import nltk
 from nltk.tokenize import word_tokenize, sent_tokenize
-from nltk.util import bigrams
+from nltk.util import bigrams, trigrams
 from os import listdir
 from os.path import join, isfile
 import pickle
@@ -66,28 +66,45 @@ def index(input_file, output_file_dictionary, output_file_postings):
 		ps = nltk.stem.PorterStemmer()
 		stemmed_tokens = [ps.stem(token) for token in tokens]
 		
-		# Augment list of tokens with 2-word and 3-word phrases
-		#for bigram in bigrams(stemmed_tokens):
-			
-
 		# maps every unique term in doc to its frequency
 		term_to_freq = {}
-		for term in stemmed_tokens:
-			if term not in dictionary:
-				dictionary[term] = (None, 1)
-				index[term] = [(doc_id, 1)]
-				term_to_freq[term] = 1	
-			# if doc_id is not already added to term's postings
-			elif index[term][dictionary[term][1]- 1][0] != doc_id: 
-				# increment df for term
-				dictionary[term] = (None, dictionary[term][1] + 1)
-				index[term].append((doc_id, 1))
-				term_to_freq[term] = 1	
-			# if doc_id is already added to term's postings, increment tf for that document
+		# Maintain past two tokens to generate n-grams
+		token1 = None
+		token2 = None
+		n_grams = None
+		for token in stemmed_tokens:
+			# Generate Bigrams and Trigrams with prev tokens and current token if
+			# prev tokens exist
+			if token2 == None:
+				n_grams = (token) 
+			elif token1 == None:
+				n_grams = (token, ' '.join((token2, token)))
 			else:
-				index[term][dictionary[term][1] - 1] = (index[term][dictionary[term][1] - 1][0], index[term][dictionary[term][1] - 1][1] + 1)
-				term_to_freq[term] += 1	
-				#print("Increment tf of " + term + " in " + str(doc_id) + " to " + str(posting[1]))
+				n_grams = (token,  ' '.join((token2, token)), ' '.join((token1, token2, token)))
+			
+			# Update the dictionary and postings accordingly with the
+			# n_gram occurrence 
+			for term in n_grams:
+				if term not in dictionary:
+					dictionary[term] = (None, 1)
+					index[term] = [(doc_id, 1)]
+					term_to_freq[term] = 1	
+				# if doc_id is not already added to term's postings
+				elif index[term][dictionary[term][1]- 1][0] != doc_id: 
+					# increment df for term
+					dictionary[term] = (None, dictionary[term][1] + 1)
+					index[term].append((doc_id, 1))
+					term_to_freq[term] = 1	
+				# if doc_id is already added to term's postings, increment tf for that document
+				else:
+					index[term][dictionary[term][1] - 1] = (index[term][dictionary[term][1] - 1][0], index[term][dictionary[term][1] - 1][1] + 1)
+					term_to_freq[term] += 1	
+					#print("Increment tf of " + term + " in " + str(doc_id) + " to " + str(posting[1]))
+			
+			# Roll prev tokens back to make space for  the next token in the 
+			# n-grams
+			token1 = token2
+			token2 = token
 		
 		# calculate and store vector magnitude of doc
 		mag_square = 0
