@@ -40,6 +40,7 @@ def index(input_file, output_file_dictionary, output_file_postings):
 	# to the respective posting list in the index. If term is new, add new key 
 	# in dictionary and index
 	for doc_id in doc_ids:
+		print("Indexing document " + str(doc_id) + " ...")
 		# Combine all fields in doc into one text
 		document = documents[str(doc_id)]
 		text = ""
@@ -48,10 +49,7 @@ def index(input_file, output_file_dictionary, output_file_postings):
 		#### Preprocess Text ###
 		text = text.replace('\n', ' ')
 		# tokenize
-		try:
-			sentences = sent_tokenize(text.decode('utf-8'))
-		except Exception as e:
-			sys.exit()
+		sentences = sent_tokenize(text.decode('utf-8'))
 		
 		# Replace all non-alphanum, non-space chars in each sentence with space
 		tokens = []
@@ -143,10 +141,11 @@ def index(input_file, output_file_dictionary, output_file_postings):
 		offset = postings_file.tell()
 	postings_file.flush()
 	postings_file.close()
-
+	
+	plaintext_postings_file = open("plaintext_postings.txt", "wb")
 	for term in index:
-		print(term)
-		print(index[term])
+		plaintext_postings_file.write(str(term) + "\n")
+		plaintext_postings_file.write(str(index[term]) + "\n")
 
 	# Write dictionary to dictionary file			
 	dictionary_file = open(output_file_dictionary, "wb")
