@@ -1,33 +1,34 @@
 import csv
+import math
 import nltk
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.util import bigrams, trigrams
+import os
 from os import listdir
 from os.path import join, isfile
 import pickle
-import math
+import sys
+import traceback
 
 def index(input_file, output_file_dictionary, output_file_postings):
-	
 	# List of document_ids of all docs
 	doc_ids = []
 	# Map document_id to dictionaries of documents
 	documents = {}
 	
+	reload(sys)
+	sys.setdefaultencoding('utf8')
+	csv.field_size_limit(sys.maxsize)		
 	# Store each document as a dictionary whose keys are the fields
 	# of the document.
 	with open(input_file, "r") as csv_file:
 		csv_reader = csv.DictReader(csv_file)
-		line_count = 0
 		for row in csv_reader:
-			doc_ids.append(int(row['document_id']))
-			documents[str(row['document_id'])] = row
-			# print(doc_ids[line_count])
-			# print(documents[str(row['document_id'])])
-			line_count += 1
+			if int(row['document_id']) not in doc_ids:
+				doc_ids.append(int(row['document_id']))
+				documents[str(row['document_id'])] = row
 	
-	doc_ids.sort()
-
+	doc_ids.sort();
 	# Every term in the dictionary is mapped to a tuple (byte_offset, doc_freq)
 	dictionary = {}
 	# Every term in the index is mapped to a postings list
@@ -47,8 +48,10 @@ def index(input_file, output_file_dictionary, output_file_postings):
 		#### Preprocess Text ###
 		text = text.replace('\n', ' ')
 		# tokenize
-		sentences = sent_tokenize(text)
-		
+		try:
+			sentences = sent_tokenize(text.decode('utf-8'))
+		except Exception as e:
+			sys.exit()
 		
 		# Replace all non-alphanum, non-space chars in each sentence with space
 		tokens = []
@@ -98,7 +101,7 @@ def index(input_file, output_file_dictionary, output_file_postings):
 				# if doc_id is already added to term's postings, increment tf for that document
 				else:
 					index[term][dictionary[term][1] - 1] = (index[term][dictionary[term][1] - 1][0], index[term][dictionary[term][1] - 1][1] + 1)
-					term_to_freq[term] += 1	
+					term_to_freq[term] = term_to_freq[term] + 1	
 					#print("Increment tf of " + term + " in " + str(doc_id) + " to " + str(posting[1]))
 			
 			# Roll prev tokens back to make space for  the next token in the 
@@ -156,7 +159,6 @@ def index(input_file, output_file_dictionary, output_file_postings):
 	pickle.dump(lengths, lengths_file)
 	lengths_file.flush()
 	lengths_file.close()
-
 				
 	
 	
