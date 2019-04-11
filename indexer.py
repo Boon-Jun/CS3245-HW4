@@ -29,6 +29,7 @@ def index(input_file, output_file_dictionary, output_file_postings):
 				documents[str(row['document_id'])] = row
 	
 	doc_ids.sort();
+	print(str(doc_ids))
 	# Every term in the dictionary is mapped to a tuple (byte_offset, doc_freq)
 	dictionary = {}
 	# Every term in the index is mapped to a postings list
@@ -113,6 +114,8 @@ def index(input_file, output_file_dictionary, output_file_postings):
 			mag_square += math.pow(1 + math.log10(term_to_freq[term]),2)
 		vector_len = math.sqrt(mag_square)
  		lengths[doc_id] = vector_len
+	
+	print("In memory indexing complete!")
 
 	# Add skip pointers to every postings list
 	for term in index:
@@ -122,16 +125,22 @@ def index(input_file, output_file_dictionary, output_file_postings):
 		for i in range(0, (doc_freq - skip_size - 1)):
 			if i % skip_size == 0:
 				index[term][i] = (index[term][i][0], index[term][i][1], i + skip_size)
+	
+	print("Skip pointers added in memory!")	
 
 	# Write dictionary and index
 	offset = 0
 	postings_file = open(output_file_postings, "w")
 	sorted_terms = dictionary.keys()
 	sorted_terms.sort()
-	
+
+	print("Sorted dictionary terms!")
+
 	# Write all document ids at top of postings file
 	postings_file.write(str(doc_ids) + '\n')	
 	offset = postings_file.tell()
+	
+	print("Wrote all doc_ids at top of postings file!")
 
 	# Write index to postings file and corresponding
         # byte offset to dictionary file
@@ -142,10 +151,7 @@ def index(input_file, output_file_dictionary, output_file_postings):
 	postings_file.flush()
 	postings_file.close()
 	
-	plaintext_postings_file = open("plaintext_postings.txt", "wb")
-	for term in index:
-		plaintext_postings_file.write(str(term) + "\n")
-		plaintext_postings_file.write(str(index[term]) + "\n")
+	print("Postings file written! Dictionary offset updated in memory!")
 
 	# Write dictionary to dictionary file			
 	dictionary_file = open(output_file_dictionary, "wb")
@@ -153,17 +159,19 @@ def index(input_file, output_file_dictionary, output_file_postings):
 	dictionary_file.flush()
 	dictionary_file.close()
 
+	print("Dictionary file written!")
+	
 	# Write document vector lengths to lengths file
 	lengths_file = open("lengths.txt", "wb")
 	pickle.dump(lengths, lengths_file)
 	lengths_file.flush()
 	lengths_file.close()
+	
+	print("Lengths file written!")
 				
-	
-	
-	
-	
+	plaintext_postings_file = open("plaintext_postings.txt", "wb")
+	for term in sorted_terms:
+		plaintext_postings_file.write(str(term) + "\n")
+		plaintext_postings_file.write(str(index[term]) + "\n")
 
-
-
-
+	print("Plaintext_postings file written!")
