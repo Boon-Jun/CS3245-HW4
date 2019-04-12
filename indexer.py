@@ -71,8 +71,8 @@ def index(input_file, output_file_dictionary, output_file_postings):
 		# maps every unique term in doc to its frequency
 		term_to_freq = {}
 		# Maintain past two tokens to generate n-grams
-		token1 = None
-		token2 = None
+		# token1 = None
+		# token2 = None
 		n_grams = None
 		for token in stemmed_tokens:
 			# Generate Bigrams and Trigrams with prev tokens and current token if
