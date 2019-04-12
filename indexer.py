@@ -21,6 +21,7 @@ def index(input_file, output_file_dictionary, output_file_postings):
 	csv.field_size_limit(sys.maxsize)		
 	# Store each document as a dictionary whose keys are the fields
 	# of the document.
+	fields = ('document_id','title','content','date_posted','court')
 	with open(input_file, "r") as csv_file:
 		csv_reader = csv.DictReader(csv_file)
 		for row in csv_reader:
@@ -33,6 +34,8 @@ def index(input_file, output_file_dictionary, output_file_postings):
 	# Every term in the dictionary is mapped to a tuple (byte_offset, doc_freq)
 	dictionary = {}
 	# Every term in the index is mapped to a postings list
+	# Every posting in a postings list is the following tuple :
+	# (doc_id, term_freq, list of positions)
 	index = {}
 	# Every doc_id is mapped to document vector length
 	lengths = {}
@@ -45,7 +48,7 @@ def index(input_file, output_file_dictionary, output_file_postings):
 		# Combine all fields in doc into one text
 		document = documents[str(doc_id)]
 		text = ""
-		for field in document:
+		for field in fields:
 			text = " ".join((text, document[field]))
 		#### Preprocess Text ###
 		text = text.replace('\n', ' ')
@@ -70,44 +73,28 @@ def index(input_file, output_file_dictionary, output_file_postings):
 		
 		# maps every unique term in doc to its frequency
 		term_to_freq = {}
-		# Maintain past two tokens to generate n-grams
-		# token1 = None
-		# token2 = None
-		n_grams = None
-		for token in stemmed_tokens:
-			# Generate Bigrams and Trigrams with prev tokens and current token if
-			# prev tokens exist
-			if token2 == None:
-				n_grams = (token) 
-			elif token1 == None:
-				n_grams = (token, ' '.join((token2, token)))
+		# Update the dictionary and postings in the document with every term encountered
+		for position in range(0, len(stemmed_tokens)):
+			term = stemmed_tokens[position]
+			if term not in dictionary:
+				dictionary[term] = (None, 1)
+				index[term] = [(doc_id, 1, [position])]
+				term_to_freq[term] = 1	
+			# if doc_id is not already added to term's postings
+			elif index[term][dictionary[term][1]- 1][0] != doc_id: 
+				# increment df for term
+				dictionary[term] = (None, dictionary[term][1] + 1)
+				index[term].append((doc_id, 1, [position]))
+				term_to_freq[term] = 1	
+			# if doc_id is already added to term's postings, increment tf and add the new position of the term in that document
 			else:
-				n_grams = (token,  ' '.join((token2, token)), ' '.join((token1, token2, token)))
+				term_doc_freq = dictionary[term][1]
+				# The last posting in the posting list for this term which is the posting for this doc
+				last_posting = index[term][term_doc_freq - 1]
+				last_posting[2].append(position)
+				index[term][term_doc_freq - 1] = (last_posting[0], last_posting[1] + 1, last_posting[2])
+				term_to_freq[term] = term_to_freq[term] + 1	
 			
-			# Update the dictionary and postings accordingly with the
-			# n_gram occurrence 
-			for term in n_grams:
-				if term not in dictionary:
-					dictionary[term] = (None, 1)
-					index[term] = [(doc_id, 1)]
-					term_to_freq[term] = 1	
-				# if doc_id is not already added to term's postings
-				elif index[term][dictionary[term][1]- 1][0] != doc_id: 
-					# increment df for term
-					dictionary[term] = (None, dictionary[term][1] + 1)
-					index[term].append((doc_id, 1))
-					term_to_freq[term] = 1	
-				# if doc_id is already added to term's postings, increment tf for that document
-				else:
-					index[term][dictionary[term][1] - 1] = (index[term][dictionary[term][1] - 1][0], index[term][dictionary[term][1] - 1][1] + 1)
-					term_to_freq[term] = term_to_freq[term] + 1	
-					#print("Increment tf of " + term + " in " + str(doc_id) + " to " + str(posting[1]))
-			
-			# Roll prev tokens back to make space for  the next token in the 
-			# n-grams
-			token1 = token2
-			token2 = token
-		
 		# calculate and store vector magnitude of doc
 		mag_square = 0
 		for term in term_to_freq:
