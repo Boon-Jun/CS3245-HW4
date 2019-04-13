@@ -109,6 +109,7 @@ def index(input_file, output_file_dictionary, output_file_postings):
 		doc_freq = dictionary[term][1]
 		skip_pointers_count = int(math.sqrt(doc_freq))
 		skip_size = int(doc_freq / skip_pointers_count)
+		# Replace select posting tuples with posting tuples with skip pointers
 		for i in range(0, (doc_freq - skip_size - 1)):
 			if i % skip_size == 0:
 				index[term][i] = (index[term][i][0], index[term][i][1], index[term][i][2], i + skip_size)
