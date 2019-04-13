@@ -84,30 +84,32 @@ def orPosIndex(docList, postList):
     output = []
 
     while pos1 < list1Size and pos2 < list2Size:
-        item1 = postList1[pos1]
-        item2 = postList2[pos2]
+        item1 = docList[pos1]
+        item2 = postList[pos2]
         docId1 = item1[0]
         docId2 = item2[0]
 
         if docId1 == docId2:
-            posIndex = item2[2]
-            newPosIndex = sorted(item1[1].append(posIndex))
-            output.append([docId1, newPosIndex])
+            oldPosIndex = item2[2]
+            newPosIndex = item1[2]
+            newPosIndex.extend(oldPosIndex)
+            output.append([docId1, item1[1] + item2[1], newPosIndex])
             pos1 += 1
             pos2 += 1
         elif docId1 < docId2:
             output.append(item1)
             pos1 += 1
         else:
-            output.append(docId2)
+            output.append([docId2, item2[1], item2[2]])
             pos2 += 1
 
     while pos1 < list1Size:
-        output.append(item1)
+        output.append(docList[pos1])
         pos1 += 1
 
     while pos2 < list2Size:
-        output.append([docId2, item2[2]])
+        item2 = postList[pos2]
+        output.append([item2[0], item2[1], item2[2]])
         pos2 += 1
 
     return output

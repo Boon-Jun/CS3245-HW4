@@ -2,20 +2,10 @@ from query_parser import queryStringToPhraseAndTermsList, phraseToTermsList
 from search_utils import *
 import math
 import heapq
+import time
 from operator import itemgetter
 from boolean_operations import andPosIndex
-
-def filterHighIdf(term, term_dict):
-    '''
-    Returns frequency of document if frequency is less than threshold
-    else return 0 to simulate the non existence of the term in the postings list
-    '''
-    DOC_COUNT_THRESHOLD = 200000
-    freq = getDocFrequency(term, term_dict)
-    if (getDocFrequency(term, term_dict) < DOC_COUNT_THRESHOLD):
-        return freq
-    else:
-        return 0
+from thesaurus_expansion import ThesaurusTermWrapper
 
 def findDocContainingPartialPhrase(phraseTermsList, size, term_dict, postings, strict = False):
     #Returns all docs containing a partialPhrase of length 'size'
@@ -24,15 +14,17 @@ def findDocContainingPartialPhrase(phraseTermsList, size, term_dict, postings, s
         if startPos + size <= len(phraseTermsList):
             docs_list = []
             endPos = startPos + size
-            postingsList = loadPostingList(phraseTermsList[startPos], term_dict, postings)
-            #Need to merge postings list here when introducing query expansion
+            postingsList = ThesaurusTermWrapper(phraseTermsList[startPos]).generatePostingsList(term_dict, postings)
+            #postingsList = loadPostingList(phraseTermsList[startPos], term_dict, postings)
 
             for x in range(len(postingsList)):#Prepare first doc List
                 docs_list.append([postingsList[x][0], list(postingsList[x][2])])
 
             for x in range(startPos + 1, endPos):
-                #need to merge postings list here when introducing query expansion
-                docs_list = andPosIndex(docs_list, loadPostingList(phraseTermsList[x], term_dict, postings), window = (1 if strict else 3))
+                docs_list = andPosIndex(docs_list,
+                    ThesaurusTermWrapper(phraseTermsList[x]).generatePostingsList(term_dict, postings),
+                    window = (1 if strict else 3))
+                #docs_list = andPosIndex(docs_list, loadPostingList(phraseTermsList[x], term_dict, postings), window = (1 if strict else 3))
             for item in docs_list:
                 docSet.add(item[0])
         else:
@@ -49,13 +41,16 @@ def processSingleWordQuery(term, term_dict, postings, vector_lengths):
     queryTermSet = {}
     scores = {}
     docCount = filterHighIdf(term, term_dict)
+    tf_idf = 0
     if docCount != 0:
-        tf_idf = math.log10(totalNumberOfDocs/filterHighIdf(term, term_dict))
+        tf_idf = math.log10(totalNumberOfDocs/ThesaurusTermWrapper(term).generateDocumentFrequency())
+        #tf_idf = math.log10(totalNumberOfDocs/filterHighIdf(term, term_dict))
     #In single word terms, only need to calculate idf since tf = 1
 
-    postingList = loadPostingList(term, term_dict, postings)
+    postingsList = ThesaurusTermWrapper(term).generatePostingsList(term_dict, postings)
+    #postingsList = loadPostingList(term, term_dict, postings)
 
-    for posting in postingList:
+    for posting in postingsList:
         docId = posting[0]
         scores[docId] = tf_idf * (1 + math.log10(posting[1]))
 
@@ -77,7 +72,8 @@ def processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict 
     #Some preprocessing to prepare for the calculation of query weights
     for term in termsList:
         if term not in queryTermSet:
-            queryTermSet[term] = [1, filterHighIdf(term, term_dict)]
+            queryTermSet[term] = [1, ThesaurusTermWrapper(term).generateDocumentFrequency(term_dict)]
+            #queryTermSet[term] = [1, filterHighIdf(term, term_dict=)]
         else:
             queryTermSet[term][0] += 1
 
@@ -99,7 +95,8 @@ def processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict 
         #Note that only documents that have matching stems to the query will be considered
         #in the calculation of the dot product.
         for term in queryWeights:
-            postingList = loadPostingList(term, term_dict, postings)
+            postingList = ThesaurusTermWrapper(term).generatePostingsList(term_dict, postings)
+            #postingList = loadPostingList(term, term_dict, postings)
             for posting in postingList:
                 docId = posting[0]
                 if docId in docSet:
@@ -145,6 +142,7 @@ def executeSearch(queryString, term_dict, postings, vector_lengths):
     isBooleanQuery = False
     termsList = queryString.split()
 
+    startTime = time.time()
     if termsList and "AND" in termsList and "AND" != termsList[-1] and "AND" != termsList[0]:
         #Determines whether if query is free text query or boolean query with phrases/terms
         isBooleanQuery = True
@@ -153,9 +151,12 @@ def executeSearch(queryString, term_dict, postings, vector_lengths):
         #Boolean queries with phrases
         termsList = queryStringToPhraseAndTermsList(queryString)
         print "booleanQuery" + str(termsList)
-        return processBooleanQuery(termsList, term_dict, postings, vector_lengths)
+        result = processBooleanQuery(termsList, term_dict, postings, vector_lengths)
     else:
         #We will treat this as a free text query
         termsList = phraseToTermsList(queryString)
         print "freetext" + str(termsList)
-        return [pair[0] for pair in processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict = False)]
+        result = [pair[0] for pair in processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict = False)]
+
+    print "Execution Time:" + str(time.time() - startTime) + "s"    
+    return result
