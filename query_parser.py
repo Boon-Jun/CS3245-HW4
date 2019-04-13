@@ -18,12 +18,12 @@ def queryStringToPhraseAndTermsList(queryString):
         elif termsAndPhraseList[i] != "":
             # Every even index consist of terms and "AND" operators
             # We are only interested in the terms here
-            termsList.extend([stemmer.stem(word.lower()) for word in termsAndPhraseList[i].split() if word != "AND" ])
+            termsList.extend([word.lower() for word in termsAndPhraseList[i].split() if word != "AND" ])
     return termsList
 
 def phraseToTermsList(phrase):
     #Converts a phrase to a list of stemmed terms
     termsList = phrase.strip('"').split()
-    for i in range(len(termsList)):
-        termsList[i] = stemmer.stem(termsList[i].lower())
+    #for i in range(len(termsList)):
+    #    termsList[i] = stemmer.stem(termsList[i].lower())
     return termsList
