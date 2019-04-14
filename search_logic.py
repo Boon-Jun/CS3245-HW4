@@ -23,7 +23,7 @@ def findDocContainingPartialPhrase(phraseTermsList, size, term_dict, postings, s
             for x in range(startPos + 1, endPos):
                 docs_list = andPosIndex(docs_list,
                     ThesaurusTermWrapper(phraseTermsList[x], phraseTermsList).generatePostingsList(term_dict, postings),
-                    window = (1 if strict else 3))
+                    window = (1 if strict else 1))
                 #docs_list = andPosIndex(docs_list, loadPostingList(phraseTermsList[x], term_dict, postings), window = (1 if strict else 3))
             for item in docs_list:
                 docSet.add(item[0])
