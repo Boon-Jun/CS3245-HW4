@@ -16,11 +16,12 @@ def andDocLists(docList1, docList2):
     output = []
 
     while pos1 < list1Size and pos2 < list2Size:
-        item1 = postList1[pos1]
-        item2 = postList2[pos2]
+        item1 = docList1[pos1]
+        item2 = docList2[pos2]
         docId1 = item1[0]
         docId2 = item2[0]
-
+        print docId1
+        print docId2
         if docId1 == docId2:
             newItem = item1.extend(item2[1:-1])
             output.append(newItem)

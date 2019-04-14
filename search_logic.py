@@ -4,7 +4,7 @@ import math
 import heapq
 import time
 from operator import itemgetter
-from boolean_operations import andPosIndex
+from boolean_operations import andPosIndex, andDocLists
 from thesaurus_expansion import ThesaurusTermWrapper
 
 def findDocContainingPartialPhrase(phraseTermsList, size, term_dict, postings, strict = False):
@@ -14,7 +14,7 @@ def findDocContainingPartialPhrase(phraseTermsList, size, term_dict, postings, s
         if startPos + size <= len(phraseTermsList):
             docs_list = []
             endPos = startPos + size
-            postingsList = ThesaurusTermWrapper(phraseTermsList[startPos]).generatePostingsList(term_dict, postings)
+            postingsList = ThesaurusTermWrapper(phraseTermsList[startPos], phraseTermsList).generatePostingsList(term_dict, postings)
             #postingsList = loadPostingList(phraseTermsList[startPos], term_dict, postings)
 
             for x in range(len(postingsList)):#Prepare first doc List
@@ -22,7 +22,7 @@ def findDocContainingPartialPhrase(phraseTermsList, size, term_dict, postings, s
 
             for x in range(startPos + 1, endPos):
                 docs_list = andPosIndex(docs_list,
-                    ThesaurusTermWrapper(phraseTermsList[x]).generatePostingsList(term_dict, postings),
+                    ThesaurusTermWrapper(phraseTermsList[x], phraseTermsList).generatePostingsList(term_dict, postings),
                     window = (1 if strict else 3))
                 #docs_list = andPosIndex(docs_list, loadPostingList(phraseTermsList[x], term_dict, postings), window = (1 if strict else 3))
             for item in docs_list:
@@ -40,14 +40,14 @@ def processSingleWordQuery(term, term_dict, postings, vector_lengths):
     totalNumberOfDocs = getTotalNumberOfDocs(postings)
     queryTermSet = {}
     scores = {}
-    docCount = filterHighIdf(term, term_dict)
+    docCount = ThesaurusTermWrapper(term, None).generateDocumentFrequency(term_dict)
     tf_idf = 0
     if docCount != 0:
-        tf_idf = math.log10(totalNumberOfDocs/ThesaurusTermWrapper(term).generateDocumentFrequency())
+        tf_idf = math.log10(totalNumberOfDocs/docCount)
         #tf_idf = math.log10(totalNumberOfDocs/filterHighIdf(term, term_dict))
     #In single word terms, only need to calculate idf since tf = 1
 
-    postingsList = ThesaurusTermWrapper(term).generatePostingsList(term_dict, postings)
+    postingsList = ThesaurusTermWrapper(term, None).generatePostingsList(term_dict, postings)
     #postingsList = loadPostingList(term, term_dict, postings)
 
     for posting in postingsList:
@@ -63,6 +63,7 @@ def processSingleWordQuery(term, term_dict, postings, vector_lengths):
     # Top 100 items will be retrieved from the heap, first by highest score
     # and then by smallest docId, in the event that 2 documents have the same score.
     topList = heapq.nlargest(100, ([docId, scores[docId]] for docId in scores), key = lambda pair:(pair[1], -pair[0]))
+    print topList
     return topList
 
 def processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict = False):
@@ -72,7 +73,7 @@ def processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict 
     #Some preprocessing to prepare for the calculation of query weights
     for term in termsList:
         if term not in queryTermSet:
-            queryTermSet[term] = [1, ThesaurusTermWrapper(term).generateDocumentFrequency(term_dict)]
+            queryTermSet[term] = [1, ThesaurusTermWrapper(term, termsList).generateDocumentFrequency(term_dict)]
             #queryTermSet[term] = [1, filterHighIdf(term, term_dict=)]
         else:
             queryTermSet[term][0] += 1
@@ -95,7 +96,7 @@ def processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict 
         #Note that only documents that have matching stems to the query will be considered
         #in the calculation of the dot product.
         for term in queryWeights:
-            postingList = ThesaurusTermWrapper(term).generatePostingsList(term_dict, postings)
+            postingList = ThesaurusTermWrapper(term, termsList).generatePostingsList(term_dict, postings)
             #postingList = loadPostingList(term, term_dict, postings)
             for posting in postingList:
                 docId = posting[0]
@@ -131,12 +132,22 @@ def processBooleanQuery(termsList, term_dict, postings, vector_lengths):
         if type(term) is list:
             #term is a phrase, the whole phrase will be processed as a stricter version of free text query
             #where the WHOLE phrase must exist in a document
-            term_results.append(sorted(processFreeTextQuery(term, term_dict, postings, vector_lengths, strict = True)))
+            term_results.append(sorted(processFreeTextQuery(term, term_dict, postings, vector_lengths, strict = False)))
         else:
             term_results.append(sorted(processSingleWordQuery(term, term_dict, postings, vector_lengths)))
 
-
-    return []
+    andOutput = term_results[0]
+    for x in range(1, len(term_results)):
+        andOutput = andDocLists(andOutput, term_results[x])
+    meanScoredOutput = []
+    for x in range(len(andOutput)):
+        item = andOutput[x]
+        sum = 0
+        for y in range(1, len(item)):
+            sum += item[y]
+        #Take a basic average of all the scores for now
+        meanScoredOutput.append([item[0], sum/len(item) - 1])
+    return [pair[0] for pair in sorted(meanScoredOutput, key = lambda pair:(pair[1], -pair[0]))]
 
 def executeSearch(queryString, term_dict, postings, vector_lengths):
     isBooleanQuery = False
@@ -156,7 +167,8 @@ def executeSearch(queryString, term_dict, postings, vector_lengths):
         #We will treat this as a free text query
         termsList = phraseToTermsList(queryString)
         print "freetext" + str(termsList)
+        #result = processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict = False)
         result = [pair[0] for pair in processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict = False)]
 
-    print "Execution Time:" + str(time.time() - startTime) + "s"    
+    print "Execution Time:" + str(time.time() - startTime) + "s"
     return result
