@@ -63,7 +63,7 @@ def processSingleWordQuery(term, term_dict, postings, vector_lengths):
     # Top 100 items will be retrieved from the heap, first by highest score
     # and then by smallest docId, in the event that 2 documents have the same score.
     topList = heapq.nlargest(100, ([docId, scores[docId]] for docId in scores), key = lambda pair:(pair[1], -pair[0]))
-    print topList
+    #print topList
     return topList
 
 def processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict = False):

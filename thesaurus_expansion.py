@@ -2,7 +2,8 @@ from nltk.corpus import wordnet as wn
 from search_utils import *
 from boolean_operations import orPosIndex
 from nltk.stem.porter import PorterStemmer
-
+from nltk.tokenize import word_tokenize
+from nltk import pos_tag
 stemmer = PorterStemmer()
 class ThesaurusTermWrapper():
     '''
@@ -10,20 +11,35 @@ class ThesaurusTermWrapper():
     '''
     def __init__(self, term, context = None):
         self.stemmedTerm = stemmer.stem(term)
-        self.context = context
+        #print self.stemmedTerm
         self.similarTerms = set()
-        self.expandTerm(term)
+        self.expandTerm(term, context)
 
-    def expandTerm(self, term):
-        synsets = wn.synsets(term)
+    def expandTerm(self, term, context = None):
         filteredWords = set()
+        tagged_terms = []
+        pos = -1
+        if context != None:
+            tagged_terms = pos_tag(context)
+
+        #Update part of speech
+        for item in tagged_terms:
+            if term == item[0]:
+                if item[1][0] == 'J':
+                    pos = 'a'
+                elif item[1][0] == 'N':
+                    pos = 'n'
+                elif item[1][0] == 'V':
+                    pos = 'v'
+                break
+
+        synsets = wn.synsets(term)
         for synset in synsets:
-            #filteredWords.add(stemmer.stem(synset.name().split()[0]))
-            for lemma in synset.lemmas():
-                filteredWords.add(stemmer.stem(lemma.name()))
+            if synset.pos() == pos:
+                for lemma in synset.lemmas():
+                    filteredWords.add(stemmer.stem(lemma.name()))
 
         self.similarTerms = filteredWords
-        #print self.similarTerms
     def generatePostingsList(self, term_dict, postings):
         expandedTermSet = set()
         postingsList = loadPostingList(self.stemmedTerm, term_dict, postings)
@@ -34,8 +50,8 @@ class ThesaurusTermWrapper():
         for term in self.similarTerms:
             expandedPostingsList = orPosIndex(expandedPostingsList, loadPostingList(term, term_dict, postings))
         #print len(expandedPostingsList)
-        #for posting in expandedPostingsList:
-            #posting
+        for posting in expandedPostingsList:
+            posting[2].sort()
         return expandedPostingsList
 
     def generateDocumentFrequency(self, term_dict):
@@ -44,4 +60,4 @@ class ThesaurusTermWrapper():
         for word in self.similarTerms:
             count += 1
             docFreq += filterHighIdf(word, term_dict)
-        return docFreq/count if docFreq/count > 0 else 1
+        return docFreq * 1.0/count if docFreq * 1.0/count > 0 else 1
