@@ -21,14 +21,57 @@ def andDocLists(docList1, docList2):
         docId1 = item1[0]
         docId2 = item2[0]
         if docId1 == docId2:
-            newItem = item1.extend(item2[1:-1])
-            output.append(newItem)
+            item1.extend(item2[1:])
+            output.append(item1)
             pos1 += 1
             pos2 += 1
         elif docId1 < docId2:
             pos1 += 1
         else:
             pos2 += 1
+    return output
+
+def orDocLists(docList1, docList2):
+    #docList1 AND docList2
+    #docList is a list of [docId, tf-idf1, tf-idf2, ...]
+    #returns a new list of docList [docId, tf-idf1, tf-idf2, ...]
+    #docId will appear in both docList1 and docList2 and contains all tf-idf values from doclist1 and 2
+    list1Size = len(docList1)
+    list2Size = len(docList2)
+    pos1 = 0;
+    pos2 = 0;
+
+    output = []
+
+    while pos1 < list1Size and pos2 < list2Size:
+        item1 = docList[pos1]
+        item2 = postList[pos2]
+        docId1 = item1[0]
+        docId2 = item2[0]
+
+        if docId1 == docId2:
+            oldPosIndex = item2[2]
+            newPosIndex = item1[2]
+            newPosIndex.extend(oldPosIndex)
+            output.append([docId1, item1[1] + item2[1], newPosIndex])
+            pos1 += 1
+            pos2 += 1
+        elif docId1 < docId2:
+            output.append(item1)
+            pos1 += 1
+        else:
+            output.append([docId2, item2[1], item2[2]])
+            pos2 += 1
+
+    while pos1 < list1Size:
+        output.append(docList[pos1])
+        pos1 += 1
+
+    while pos2 < list2Size:
+        item2 = postList[pos2]
+        output.append([item2[0], item2[1], item2[2]])
+        pos2 += 1
+
     return output
 
 def andPosIndex(docLists, postList, window):

@@ -59,8 +59,9 @@ class ThesaurusTermWrapper():
             if context != None:
                 #Find similar words with Lesk algorithm
                 synset = lesk(context, term, pos = POS)
-                for lemma in synset.lemmas():
-                    filteredWords.add(stemmer.stem(lemma.name()))
+                if synset is not None:
+                    for lemma in synset.lemmas():
+                        filteredWords.add(stemmer.stem(lemma.name()))
 
             self.similarTerms = filteredWords
             self.__class__.termDictionary[self.term] = self
