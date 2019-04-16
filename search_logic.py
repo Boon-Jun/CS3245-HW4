@@ -162,7 +162,15 @@ def executeSearch(queryString, term_dict, postings, vector_lengths):
         #Boolean queries with phrases
         termsList = queryStringToPhraseAndTermsList(queryString)
         print "booleanQuery" + str(termsList)
-        result = processBooleanQuery(termsList, term_dict, postings, vector_lengths)
+        newFreeText = []
+        for term in termsList:
+            if type(term) is list:
+                for subterm in term:
+                    newFreeText.append(subterm)
+            else:
+                newFreeText.append(term)
+        result =  [pair[0] for pair in processFreeTextQuery(newFreeText, term_dict, postings, vector_lengths, strict = False)]                
+        #result = processBooleanQuery(termsList, term_dict, postings, vector_lengths)
     else:
         #We will treat this as a free text query
         termsList = phraseToTermsList(queryString)
