@@ -62,7 +62,7 @@ def processSingleWordQuery(term, term_dict, postings, vector_lengths):
 
     # Top 100 items will be retrieved from the heap, first by highest score
     # and then by smallest docId, in the event that 2 documents have the same score.
-    topList = heapq.nlargest(100, ([docId, scores[docId]] for docId in scores), key = lambda pair:(pair[1], -pair[0]))
+    topList = heapq.nlargest(18000, ([docId, scores[docId]] for docId in scores), key = lambda pair:(pair[1], -pair[0]))
     #print topList
     return topList
 
@@ -112,7 +112,7 @@ def processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict 
         #Retrieve Top 20 Documents with a heap
         # Top 20 items will be retrieved from the heap, first by highest score
         # and then by smallest docId, in the event that 2 documents have the same score.
-        topList = heapq.nlargest(20, ([scores[docId], docId] for docId in scores), key = lambda pair:(pair[0], -pair[1]))
+        topList = heapq.nlargest(18000, ([scores[docId], docId] for docId in scores), key = lambda pair:(pair[0], -pair[1]))
 
         for pair in topList:
             docId = pair[1]
@@ -169,7 +169,7 @@ def executeSearch(queryString, term_dict, postings, vector_lengths):
                     newFreeText.append(subterm)
             else:
                 newFreeText.append(term)
-        result =  [pair[0] for pair in processFreeTextQuery(newFreeText, term_dict, postings, vector_lengths, strict = False)]                
+        result =  [pair[0] for pair in processFreeTextQuery(newFreeText, term_dict, postings, vector_lengths, strict = False)]
         #result = processBooleanQuery(termsList, term_dict, postings, vector_lengths)
     else:
         #We will treat this as a free text query
@@ -179,4 +179,5 @@ def executeSearch(queryString, term_dict, postings, vector_lengths):
         result = [pair[0] for pair in processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict = False)]
 
     print "Execution Time:" + str(time.time() - startTime) + "s"
+    ThesaurusTermWrapper.clearTermStorage()
     return result

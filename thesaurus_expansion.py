@@ -94,3 +94,7 @@ class ThesaurusTermWrapper():
             self.freq = docFreq * 1.0/count if docFreq * 1.0/count > 0 else 1
             self.__class__.termDictionary[self.term] = self
         return self.freq
+    @classmethod
+    def clearTermStorage(cls):
+        #Used for clearing termDictionary after a query
+         cls.termDictionary.clear() 
