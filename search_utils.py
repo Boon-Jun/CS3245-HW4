@@ -38,7 +38,7 @@ def filterHighIdf(term, term_dict):
     Returns frequency of document if frequency is less than threshold
     else return 0 to simulate the non existence of the term in the postings list
     '''
-    DOC_COUNT_THRESHOLD = 200
+    DOC_COUNT_THRESHOLD = 18000
     freq = getDocFrequency(term, term_dict)
     if (getDocFrequency(term, term_dict) < DOC_COUNT_THRESHOLD):
         return freq
