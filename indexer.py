@@ -76,11 +76,11 @@ def index(input_file, output_file_dictionary, output_file_postings):
 		
 		# Extract meta_info from doc
 		meta_info = []
-		datetimes = extract_dates(text)
+		#datetimes = extract_dates(text)
 		
-		for datetime in datetimes:
-			if (datetime != None):
-				meta_info.append(Field(str(datetime.date())))
+		#for datetime in datetimes:
+		#	if (datetime != None):
+		#		meta_info.append(Field(str(datetime.date())))
 		if document['court'] != None:
 			if isinstance(document['court'], tuple):
 				meta_info.append(Field(document['court'][0]))
