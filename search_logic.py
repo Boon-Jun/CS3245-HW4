@@ -121,7 +121,7 @@ def processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict 
                 relevantDocsList.append([docId, scores[docId]])
                 found += 1
 
-        if found > 10:
+        if found > 18000:
             return relevantDocsList
     return relevantDocsList
 
