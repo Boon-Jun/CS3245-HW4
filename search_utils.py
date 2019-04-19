@@ -1,11 +1,13 @@
 import ast
+from nltk.stem.porter import PorterStemmer
 
 maxLength = None
-
+stemmer = PorterStemmer()
 def loadPostingList(term, term_dict, postings):
+    stemmedTerm = stemmer.stem(term)
     byteOffset = 0
     try:
-        byteOffset = term_dict[term][0]
+        byteOffset = term_dict[stemmedTerm][0]
     except KeyError as e:
         return []
     postings.seek(byteOffset)
@@ -15,8 +17,9 @@ def getAllDocIds(postings):
     return ast.literal_eval(postings.readline().rstrip())
 
 def getDocFrequency(term, term_dict):
+    stemmedTerm = stemmer.stem(term)
     try:
-        return term_dict[term][1]
+        return term_dict[stemmedTerm][1]
     except KeyError as e:
         return 0
 

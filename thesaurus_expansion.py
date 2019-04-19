@@ -1,25 +1,22 @@
 from nltk.corpus import wordnet as wn
 from search_utils import *
 from boolean_operations import orPosIndex
-from nltk.stem.porter import PorterStemmer
 from nltk.tokenize import word_tokenize
 from nltk.wsd import lesk
 from nltk import pos_tag
-stemmer = PorterStemmer()
 class ThesaurusTermWrapper():
     '''
     A term wrapper that allows us to perform operations on similar terms
     '''
     termDictionary = {}
     def __init__(self, term, context = None):
-        self.term = term
         if term in self.__class__.termDictionary:
-            self.stemmedTerm = self.__class__.termDictionary[term].stemmedTerm
+            self.term = self.__class__.termDictionary[term].term
             self.similarTerms = self.__class__.termDictionary[term].similarTerms
             self.freq = self.__class__.termDictionary[term].freq
             self.postingsList = self.__class__.termDictionary[term].postingsList
         else:
-            self.stemmedTerm = stemmer.stem(term)
+            self.term = term
             #print self.stemmedTerm
             self.similarTerms = None
             self.freq = None
@@ -61,7 +58,7 @@ class ThesaurusTermWrapper():
                 synset = lesk(context, term, pos = POS)
                 if synset is not None:
                     for lemma in synset.lemmas():
-                        filteredWords.add(stemmer.stem(lemma.name()))
+                        filteredWords.add(lemma.name())
 
             self.similarTerms = filteredWords
             self.__class__.termDictionary[self.term] = self
@@ -69,7 +66,7 @@ class ThesaurusTermWrapper():
     def generatePostingsList(self, term_dict, postings):
         if self.postingsList == None:
             expandedTermSet = set()
-            postingsList = loadPostingList(self.stemmedTerm, term_dict, postings)
+            postingsList = loadPostingList(self.term, term_dict, postings)
 
             #Prepare first docList
             expandedPostingsList = [[item[0], item[1], item[2]]for item in postingsList]
@@ -86,7 +83,7 @@ class ThesaurusTermWrapper():
 
     def generateDocumentFrequency(self, term_dict):
         if self.freq == None:
-            docFreq = filterHighIdf(self.stemmedTerm, term_dict)
+            docFreq = filterHighIdf(self.term, term_dict)
             count = 1
             for word in self.similarTerms:
                 count += 1
@@ -97,4 +94,4 @@ class ThesaurusTermWrapper():
     @classmethod
     def clearTermStorage(cls):
         #Used for clearing termDictionary after a query
-         cls.termDictionary.clear() 
+         cls.termDictionary.clear()
