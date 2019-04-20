@@ -1,4 +1,5 @@
 quiet phone call
+quiet AND "phone call"
 "fertility treatment" AND damages
 fertility treatment damages
 good grades exchange scandal
