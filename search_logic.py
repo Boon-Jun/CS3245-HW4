@@ -1,4 +1,4 @@
-from query_parser import queryStringToPhraseAndTermsList, phraseToTermsList
+from query_parser import queryStringToPhraseAndTermsList, phraseToTermsList, filterStopWords
 from search_utils import *
 import math
 import heapq
@@ -67,11 +67,12 @@ def processSingleWordQuery(term, term_dict, postings, vector_lengths):
     return topList
 
 def processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict = False):
+    filteredTermsList =  filterStopWords(termsList)
     totalNumberOfDocs = getTotalNumberOfDocs(postings)
     queryTermSet = {}
     queryWeights = {}
     #Some preprocessing to prepare for the calculation of query weights
-    for term in termsList:
+    for term in filteredTermsList:
         if term not in queryTermSet:
             queryTermSet[term] = [1, ThesaurusTermWrapper(term, termsList).generateDocumentFrequency(term_dict)]
             #queryTermSet[term] = [1, filterHighIdf(term, term_dict=)]
@@ -89,9 +90,9 @@ def processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict 
     relevantDocsSet = set()
     relevantDocsList = []
     found = 0
-    for size in range(len(termsList), len(termsList) - 1 if strict else 0 , -1):#size is the length of the partial phrase that we are going to search
+    for size in range(len(filteredTermsList), len(filteredTermsList) - 1 if strict else 0 , -1):#size is the length of the partial phrase that we are going to search
         scores = {}
-        docSet = findDocContainingPartialPhrase(termsList, size, term_dict, postings, strict)
+        docSet = findDocContainingPartialPhrase(filteredTermsList, size, term_dict, postings, strict)
         #Calculates dot product of query length and document length(without normalization)
         #Note that only documents that have matching stems to the query will be considered
         #in the calculation of the dot product.

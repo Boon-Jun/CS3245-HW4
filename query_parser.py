@@ -2,9 +2,10 @@ import re
 import nltk
 from nltk.stem.porter import PorterStemmer
 from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
 
 stemmer = PorterStemmer()
-
+stopWords = set(stopwords.words('english'))
 def queryStringToPhraseAndTermsList(queryString):
     #Retrieves terms and phrases from query string
     termsAndPhraseList = queryString.split('"')
@@ -24,6 +25,18 @@ def queryStringToPhraseAndTermsList(queryString):
 def phraseToTermsList(phrase):
     #Converts a phrase to a list of stemmed terms
     termsList = phrase.strip('"').split()
+    #filteredList = []
+    #for term in termsList:
+    #    if term not in stopWords:
+    #        filteredList.append(term)
     #for i in range(len(termsList)):
     #    termsList[i] = stemmer.stem(termsList[i].lower())
     return termsList
+
+def filterStopWords(termsList):
+    #Converts a phrase to a list of stemmed terms
+    filteredList = []
+    for term in termsList:
+        if term not in stopWords:
+            filteredList.append(term)
+    return filteredList
