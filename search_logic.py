@@ -6,6 +6,7 @@ import time
 from operator import itemgetter
 from boolean_operations import andPosIndex, andDocLists
 from thesaurus_expansion import ThesaurusTermWrapper
+from pseudo_relevance_feedback import PseudoRF
 
 def findDocContainingPartialPhrase(phraseTermsList, size, term_dict, postings, strict = False):
     #Returns all docs containing a partialPhrase of length 'size'
@@ -31,7 +32,7 @@ def findDocContainingPartialPhrase(phraseTermsList, size, term_dict, postings, s
             break
     return docSet
 
-def processSingleWordQuery(term, term_dict, postings, vector_lengths):
+def processSingleWordQuery(term, term_dict, postings, vector_lengths, doc_vectors):
     '''
         After processing single word terms returns a list of [docId, scores]
         sorted in order of increasing relevance. One document is more relevant
@@ -66,7 +67,7 @@ def processSingleWordQuery(term, term_dict, postings, vector_lengths):
     #print topList
     return topList
 
-def processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict = False):
+def processFreeTextQuery(termsList, term_dict, postings, vector_lengths, doc_vectors, strict = False):
     filteredTermsList =  filterStopWords(termsList)
     totalNumberOfDocs = getTotalNumberOfDocs(postings)
     queryTermSet = {}
@@ -113,6 +114,7 @@ def processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict 
         #Retrieve Top 20 Documents with a heap
         # Top 20 items will be retrieved from the heap, first by highest score
         # and then by smallest docId, in the event that 2 documents have the same score.
+        '''#The following is without PRF
         topList = heapq.nlargest(18000, ([scores[docId], docId] for docId in scores), key = lambda pair:(pair[0], -pair[1]))
 
         for pair in topList:
@@ -124,16 +126,34 @@ def processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict 
 
         if found > 18000:
             return relevantDocsList
+        return relevantDocsList
+
+        '''
+        topList = heapq.nlargest(18000, ([scores[docId], docId] for docId in scores), key = lambda pair:(pair[0], -pair[1]))
+
+        for pair in topList:
+            docId = pair[1]
+            if docId not in relevantDocsSet:
+                relevantDocsSet.add(docId)
+                relevantDocsList.append([docId, scores[docId]])
+                found += 1
+
+        if found < 10:
+            #Continue finding more results:D
+            continue
+
+        initialRelevantDocs = relevantDocsList[:10]
+        relevantDocsList = PseudoRF(queryWeights, initialRelevantDocs).giveFeedback(term_dict, postings, doc_vectors, vector_lengths)
     return relevantDocsList
 
-def processBooleanQuery(termsList, term_dict, postings, vector_lengths):
+def processBooleanQuery(termsList, term_dict, postings, vector_lengths, doc_vectors):
     #Some preprocessing to prepare for the calculation of query weights
     term_results = []
     for term in termsList:
         if type(term) is list:
             #term is a phrase, the whole phrase will be processed as a stricter version of free text query
             #where the WHOLE phrase must exist in a document
-            term_results.append(sorted(processFreeTextQuery(term, term_dict, postings, vector_lengths, strict = False)))
+            term_results.append(sorted(processFreeTextQuery(term, term_dict, postings, vector_lengths, doc_vectors, strict = False)))
         else:
             term_results.append(sorted(processSingleWordQuery(term, term_dict, postings, vector_lengths)))
 
@@ -150,7 +170,7 @@ def processBooleanQuery(termsList, term_dict, postings, vector_lengths):
         meanScoredOutput.append([item[0], sum/len(item) - 1])
     return [pair[0] for pair in sorted(meanScoredOutput, key = lambda pair:(pair[1], -pair[0]))]
 
-def executeSearch(queryString, term_dict, postings, vector_lengths):
+def executeSearch(queryString, term_dict, postings, vector_lengths, doc_vectors):
     isBooleanQuery = False
     termsList = queryString.split()
 
@@ -170,14 +190,14 @@ def executeSearch(queryString, term_dict, postings, vector_lengths):
                     newFreeText.append(subterm)
             else:
                 newFreeText.append(term)
-        result =  [pair[0] for pair in processFreeTextQuery(newFreeText, term_dict, postings, vector_lengths, strict = False)]
+        result =  [pair[0] for pair in processFreeTextQuery(newFreeText, term_dict, postings, vector_lengths, doc_vectors, strict = False)]
         #result = processBooleanQuery(termsList, term_dict, postings, vector_lengths)
     else:
         #We will treat this as a free text query
         termsList = phraseToTermsList(queryString)
         print "freetext" + str(termsList)
         #result = processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict = False)
-        result = [pair[0] for pair in processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict = False)]
+        result = [pair[0] for pair in processFreeTextQuery(termsList, term_dict, postings, vector_lengths, doc_vectors, strict = False)]
 
     print "Execution Time:" + str(time.time() - startTime) + "s"
     ThesaurusTermWrapper.clearTermStorage()

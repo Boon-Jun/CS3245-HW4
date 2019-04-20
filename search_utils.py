@@ -36,6 +36,13 @@ def getTotalNumberOfDocs(postings):
         maxLength = len(getAllDocIds(postings))
     return maxLength
 
+def getDocVector(docId, doc_vectors):
+    try:
+        return doc_vectors[str(docId)]
+    except KeyError as e:
+        print "error"
+        return 0
+
 def filterHighIdf(term, term_dict):
     '''
     Returns frequency of document if frequency is less than threshold
