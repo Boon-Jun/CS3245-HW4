@@ -31,6 +31,52 @@ def andDocLists(docList1, docList2):
             pos2 += 1
     return output
 
+def orOutputWithCombineCount(docList1, docList2):
+    list1Size = len(docList1)
+    list2Size = len(docList2)
+    pos1 = 0;
+    pos2 = 0;
+
+    output = []
+
+    while pos1 < list1Size and pos2 < list2Size:
+        item1 = docList1[pos1]
+        item2 = docList2[pos2]
+        docId1 = item1[0]
+        docId2 = item2[0]
+
+        if docId1 == docId2:
+            oldCombinedCount = 1
+            if len(item1) == 4:
+                oldCombinedCount += item1[3]
+            else:
+                oldCombinedCount += 1
+            output.append([docId1, item1[1] + item2[1], item1[2] + item2[2], oldCombinedCount])
+            pos1 += 1
+            pos2 += 1
+        elif docId1 < docId2:
+            item1.append(1)
+            output.append(item1)
+            pos1 += 1
+        else:
+            item2.append(1)
+            output.append(item2)
+            pos2 += 1
+
+    while pos1 < list1Size:
+        item1 = docList1[pos1]
+        item1.append(1)
+        output.append(item1)
+        pos1 += 1
+
+    while pos2 < list2Size:
+        item2 = docList2[pos2]
+        item2.append(1)
+        output.append(item2)
+        pos2 += 1
+
+    return output
+
 def orDocLists(docList1, docList2):
     #docList1 AND docList2
     #docList is a list of [docId, tf-idf1, tf-idf2, ...]
