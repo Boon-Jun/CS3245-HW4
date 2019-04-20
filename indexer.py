@@ -1,4 +1,5 @@
 import csv
+from date_extractor import extract_dates
 import math
 import nltk
 from nltk.tokenize import word_tokenize, sent_tokenize
@@ -10,29 +11,54 @@ import pickle
 import sys
 import traceback
 
+class Field:
+	value = None
+
+	def __init__(self, value):
+		self.value = value 
+
+	def __str__(self):
+		return self.value
+	
 def index(input_file, output_file_dictionary, output_file_postings):
 	# List of document_ids of all docs
 	doc_ids = []
+	
+	# Dictionary of doc_id mapped to the number of terms the doc has
+	doc_id_to_word_count = {}	
+
 	# Map document_id to dictionaries of documents
 	documents = {}
 	
+	# List of courts
+	courts = []	
+
 	reload(sys)
 	sys.setdefaultencoding('utf8')
 	csv.field_size_limit(sys.maxsize)		
 	# Store each document as a dictionary whose keys are the fields
 	# of the document.
+	fields = ('document_id','title','content','date_posted','court')
 	with open(input_file, "r") as csv_file:
 		csv_reader = csv.DictReader(csv_file)
 		for row in csv_reader:
+			if str(row['court']) not in courts:
+				courts.append(str(row['court']))
 			if int(row['document_id']) not in doc_ids:
 				doc_ids.append(int(row['document_id']))
 				documents[str(row['document_id'])] = row
+			else:
+				# If there is duplicate document_id it must be that only the courts differ
+				# Index both courts in a tuple for such documents
+				documents[str(row['document_id'])]['court'] = (documents[str(row['document_id'])]['court'], str(row['court']))
 	
 	doc_ids.sort();
 	print(str(doc_ids))
 	# Every term in the dictionary is mapped to a tuple (byte_offset, doc_freq)
 	dictionary = {}
 	# Every term in the index is mapped to a postings list
+	# Every posting in a postings list is the following tuple :
+	# (doc_id, term_freq, list of positions)
 	index = {}
 	# Every doc_id is mapped to document vector length
 	lengths = {}
@@ -45,8 +71,23 @@ def index(input_file, output_file_dictionary, output_file_postings):
 		# Combine all fields in doc into one text
 		document = documents[str(doc_id)]
 		text = ""
-		for field in document:
-			text = " ".join((text, document[field]))
+		for field in fields:
+			text = " ".join((text, str(document[field])))
+		
+		# Extract meta_info from doc
+		meta_info = []
+		#datetimes = extract_dates(text)
+		
+		#for datetime in datetimes:
+		#	if (datetime != None):
+		#		meta_info.append(Field(str(datetime.date())))
+		if document['court'] != None:
+			if isinstance(document['court'], tuple):
+				meta_info.append(Field(document['court'][0]))
+				meta_info.append(Field(document['court'][1]))
+			else:
+				meta_info.append(Field(document['court']))
+		
 		#### Preprocess Text ###
 		text = text.replace('\n', ' ')
 		# tokenize
@@ -68,46 +109,51 @@ def index(input_file, output_file_dictionary, output_file_postings):
 		ps = nltk.stem.PorterStemmer()
 		stemmed_tokens = [ps.stem(token) for token in tokens]
 		
+
+		# Insert word count of a document
+		doc_id_to_word_count[doc_id] = len(stemmed_tokens)
+		
+		# Add fields to stemmed_tokens to be indexed
+		stemmed_tokens.extend(meta_info)
+			
 		# maps every unique term in doc to its frequency
 		term_to_freq = {}
-		# Maintain past two tokens to generate n-grams
-		token1 = None
-		token2 = None
-		n_grams = None
-		for token in stemmed_tokens:
-			# Generate Bigrams and Trigrams with prev tokens and current token if
-			# prev tokens exist
-			if token2 == None:
-				n_grams = (token) 
-			elif token1 == None:
-				n_grams = (token, ' '.join((token2, token)))
-			else:
-				n_grams = (token,  ' '.join((token2, token)), ' '.join((token1, token2, token)))
-			
-			# Update the dictionary and postings accordingly with the
-			# n_gram occurrence 
-			for term in n_grams:
-				if term not in dictionary:
-					dictionary[term] = (None, 1)
-					index[term] = [(doc_id, 1)]
-					term_to_freq[term] = 1	
-				# if doc_id is not already added to term's postings
-				elif index[term][dictionary[term][1]- 1][0] != doc_id: 
-					# increment df for term
-					dictionary[term] = (None, dictionary[term][1] + 1)
-					index[term].append((doc_id, 1))
-					term_to_freq[term] = 1	
-				# if doc_id is already added to term's postings, increment tf for that document
+		# Update the dictionary and postings in the document with every term encountered
+		for position in range(0, len(stemmed_tokens)):
+			# Meta terms will be indexed differently from regular terms -> No positional index
+			# and will not be part of VSM
+			is_meta = False
+			if isinstance(stemmed_tokens[position], Field):
+				 is_meta = True
+			term = str(stemmed_tokens[position])
+			if term not in dictionary:
+				dictionary[term] = (None, 1)
+				if is_meta:
+					index[term] = [(doc_id, 1, None)]
 				else:
-					index[term][dictionary[term][1] - 1] = (index[term][dictionary[term][1] - 1][0], index[term][dictionary[term][1] - 1][1] + 1)
+					index[term] = [(doc_id, 1, [position])]
+					term_to_freq[term] = 1	
+			# if doc_id is not already added to term's postings
+			elif index[term][dictionary[term][1]- 1][0] != doc_id: 
+				# increment df for term
+				dictionary[term] = (None, dictionary[term][1] + 1)
+				if is_meta:
+					index[term].append((doc_id, 1, None))
+				else:
+					index[term].append((doc_id, 1, [position]))
+					term_to_freq[term] = 1	
+			# if doc_id is already added to term's postings, increment tf and add the new position of the term in that document
+			else:
+				term_doc_freq = dictionary[term][1]
+				# The last posting in the posting list for this term which is the posting for this doc
+				last_posting = index[term][term_doc_freq - 1]
+				if is_meta:
+					index[term][term_doc_freq - 1] = (last_posting[0], last_posting[1] + 1, None)
+				else:
+					last_posting[2].append(position)
+					index[term][term_doc_freq - 1] = (last_posting[0], last_posting[1] + 1, last_posting[2])
 					term_to_freq[term] = term_to_freq[term] + 1	
-					#print("Increment tf of " + term + " in " + str(doc_id) + " to " + str(posting[1]))
 			
-			# Roll prev tokens back to make space for  the next token in the 
-			# n-grams
-			token1 = token2
-			token2 = token
-		
 		# calculate and store vector magnitude of doc
 		mag_square = 0
 		for term in term_to_freq:
@@ -122,9 +168,10 @@ def index(input_file, output_file_dictionary, output_file_postings):
 		doc_freq = dictionary[term][1]
 		skip_pointers_count = int(math.sqrt(doc_freq))
 		skip_size = int(doc_freq / skip_pointers_count)
+		# Replace select posting tuples with posting tuples with skip pointers
 		for i in range(0, (doc_freq - skip_size - 1)):
 			if i % skip_size == 0:
-				index[term][i] = (index[term][i][0], index[term][i][1], i + skip_size)
+				index[term][i] = (index[term][i][0], index[term][i][1], index[term][i][2], i + skip_size)
 	
 	print("Skip pointers added in memory!")	
 
@@ -175,3 +222,19 @@ def index(input_file, output_file_dictionary, output_file_postings):
 		plaintext_postings_file.write(str(index[term]) + "\n")
 
 	print("Plaintext_postings file written!")
+
+	# Write document word counts to word_counts file
+	word_counts_file = open("word_counts.txt", "wb")
+	pickle.dump(doc_id_to_word_count, word_counts_file)
+	word_counts_file.flush()
+	word_counts_file.close()
+	
+	print("Word_counts file written!")
+
+	# Write court names to courts file
+	courts_file = open("courts.txt", "wb")
+	courts_file.write(str(courts))
+	courts_file.flush()
+	courts_file.close()
+	
+	print("Courts file written!")

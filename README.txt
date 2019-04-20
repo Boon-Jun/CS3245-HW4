@@ -69,18 +69,23 @@ can be unpickled during the search when the document score computation takes pla
 
 Searching Algorithm:
 ---------------------
-Note: There are some changes to how search.py is used. Refer to the section under
-      'Files included with this submission' for more details
+In the main implementation of the Search Algorithm, we will be ranking the documents
+by lnc.ltc ranking scheme(similar to that of HW3). However, as an addition, we will
+also be ranking a document higher if a phrase within the original query exists
+within a document. The longer the phrase, the higher the document will rank.
+Ranking of the documents by phrase will take precedence of lnc.ltc
 
-Before the documents are being ranked, all non alphanumeric characters in the query
-string will be replaced with a space before tokenizing it and stemming it with
-PorterStemmer. This is similar to how the the words in the documents are indexed.
+We will also document both the MAF2(Mean Average F2) and MAP(Mean Average Precision)
+metric here to talk about our progress as we explain the high level algorithm that
+we have implemented
 
-The documents will then be ranked according to the lnc.ltc ranking scheme.
+====================Ranking by lnc.ltc ranking scheme================
+The documents will be ranked according to the lnc.ltc ranking scheme.
 That is to say that the weights of each term in the document will be calculated as :
 (1 + log10(term_frequency_in_documents))
 whereas the weights of each term in the query will be calculated as:
 tf-idf = (1 + log(term_frequency_in_query)) * log(number_of_documents/document_frequency)
+
 After that, cosine normalization will be applied to the weights of each term in both
 the query and the document, and the dot product of the weights of the terms in the
 query and the weights of the terms in the documents will give us a score.
@@ -90,71 +95,46 @@ normalization for the query since the computation of the cosine normalization
 for the query will reduce the calculated scores by the same factor, and the
 actual ranking of the documents will not be affected.
 
-To retrieve the Top 10 Ranked documents, we utilize the heapq library, nlargest
-method.
+===============Parsing of Boolean to FreeText Queries==================
+From our experimentation with different techniques, we found that treating boolean
+queries as FreeText query provides better results in most cases.
+To convert a Boolean query to a FreeText query, we simply concatenate all the terms
+with a space in between to create a FreeText.
 
-How the nlargest method selects the top 10 ranked documents:
-1) If there are lesser than 10 documents, the method will return all the documents
-2) Else:
-   2a) Create a heap of size 10 first with 10 documents
-   2b) For each document(A) not added into the heap yet
-       a)If A has a higher score than the document with the lowest score in the heap
-	       or if A has the same score with the document with the lowest score in the heap,
-		     but a smaller document ID, then the document within the heap will be removed
-		     and A will be added into the heap.
-       b)If not, A will not be added to the heap.
+===============Execution of FreeText Queries====================
+Since all types of queries are now considered as FreeText, we can execute all of
+them in the same manner. The High level algorithm is as follows
 
-Since there is a total of N documents and a heap of size 10, there will be an upperbound
-of N additions and N removals. Therefore, the time complexity to retrieve the top
-10 documents is O(NLog10)
+1. First we find all documents with that contains partial phrases up to a size of 4
+   (We limit the size of phrases here due to the possiblity of long queries which can greatly increase query time)
+	 1.1 With the list of documents that have partial phrases up to a size of 4, we will
+	 		 then rank only these documents via the lnc.ltc ranking scheme
 
-After the top 10(or lesser) documents are retrieved, the document Ids are then
-sorted in order of decreasing score and then by order of increasing document Ids
-in the event that 2 documents have the same score.
+	 1.2 Any documents returned will be appended to a relevant documents list by the
+	     lnc.ltc ranking scheme
 
-== Essay Questions ==
+2. Next we find all documents with that contains partial phrases up to a size of 3
+		2.1 With the list of documents that have partial phrases up to a size of 3, we will
+		    then rank only these documents via the lnc.ltc ranking scheme
+    2.2 Any documents returned will be appended to a relevant documents list by the
+		    lnc.ltc ranking scheme. Since the documents are appended to the list, the
+				order of documents already within the list will not be affected
 
-1. In this assignment, we didn't ask you to support phrasal queries, which is a
-feature that is typically supported in web search engines. Describe how you would
- support phrasal search in conjunction with the VSM model. A sketch of the algorithm
- is sufficient. (For those of you who like a challenge, please go ahead and
- implement this feature in your submission but clearly demarcate it in your
- code and allow this feature to be turned on or off using the command line
- switch "-x" (where "-x" means to turn on the extended processing of phrasal
- queries). We will give a small bonus to submissions that achieve this
- functionality correctly).
+3. Repeat the whole process for partial phrases of the size of 2 and 1
 
- In our opinion, one possible way to perform phrasal queries is to index the documents into
- postings for unigrams and bi-grams, and store both type of grams into the index.
- We can also extend this to higher n-grams as long as space is not an issue.
- Example: "Fight me please" will be indexed as "Fight", "me", "Fight me", "me please"
- etc.
+=============Baseline================
+VSM Model, ranking done with what was described in the previous section. The following
+are our results from the 3 given queries
 
- To perform the search, n-grams from the query will be first obtained.
- When phrasal queries are enabled we could modify the VSM such that the
- axes of a vector for each documents includes the n-grams along with the unigrams.
- We could then implement the same lnc.ltc ranking scheme and rank each
- document accordingly.
+MAF2: 0.3031148884
+MAP: 0.2126508143
 
- However, this implementation does not consider phrases that has a length
- of more than n, where n is the highest numbered n-gram stored in the index.
+=============== Query Expansion with Princeton's Wordnet ==============
+We will be expanding each query term
 
-2. Describe how your search engine reacts to long documents and long queries as
-compared to short documents and queries. Is the normalization you use sufficient
-to address the problems (see Section 6.4.4 for a hint)? In your judgement,
-is the ltc.lnc scheme (n.b., not the ranking scheme you were asked to implement)
-sufficient for retrieving documents from the Reuters-21578 collection?
+=============== Language Model(Mixture Model) ==============
 
-Firstly, long queries takes a longer time to process.
-Longer queries with a lot of words from a particular document give
-very accurate results. However, if the query is short, shorter documents might be favoured
-although normalization is done. This is due to the fact that the shorter queries often
-has limited axes of freedom for the resulting vector. Shorter documents with less diversity
-but words matching with the query will tend to have a larger consine similarity as their vectors have
-less axes of freedom similar to shorter queries. Longer documents with similar number of matching words,
- on the other hand have more axes of freedom. This means that the presence of other axes for longer
-document vectors might "pull" the vector away from the query vector creating a larger angle between them.
-Normalization does not solve this as it does not affect the angle between the vectors.
+
 
 
 == Files included with this submission ==
