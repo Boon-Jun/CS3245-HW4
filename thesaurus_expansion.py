@@ -4,6 +4,7 @@ from boolean_operations import orPosIndex
 from nltk.tokenize import word_tokenize
 from nltk.wsd import lesk
 from nltk import pos_tag
+
 class ThesaurusTermWrapper():
     '''
     A term wrapper that allows us to perform operations on similar terms
@@ -13,13 +14,15 @@ class ThesaurusTermWrapper():
         if term in self.__class__.termDictionary:
             self.term = self.__class__.termDictionary[term].term
             self.similarTerms = self.__class__.termDictionary[term].similarTerms
-            self.freq = self.__class__.termDictionary[term].freq
+            self.documentFreq = self.__class__.termDictionary[term].documentFreq
+            self.collectionTermFreq = self.__class__.termDictionary[term].collectionTermFreq
             self.postingsList = self.__class__.termDictionary[term].postingsList
         else:
             self.term = term
             #print self.stemmedTerm
             self.similarTerms = None
-            self.freq = None
+            self.documentFreq = None
+            self.collectionTermFreq = None
             self.postingsList = None
             self.expandTerm(term, context)
             self.__class__.termDictionary[self.term] = self
@@ -82,15 +85,29 @@ class ThesaurusTermWrapper():
         return self.postingsList
 
     def generateDocumentFrequency(self, term_dict):
-        if self.freq == None:
+        #generates average document frequency(number of documents with these terms)
+        if self.documentFreq == None:
             docFreq = filterHighIdf(self.term, term_dict)
             count = 1
             for word in self.similarTerms:
                 count += 1
                 docFreq += filterHighIdf(word, term_dict)
-            self.freq = docFreq * 1.0/count if docFreq * 1.0/count > 0 else 1
+            self.documentFreq = docFreq * 1.0/count if docFreq * 1.0/count > 0 else 1
             self.__class__.termDictionary[self.term] = self
-        return self.freq
+        return self.documentFreq
+
+    def generateCollectionTermFrequency(self, term_dict):
+        #Generates average collection frequency(number of terms in the whole collection)
+        if self.collectionTermFreq == None:
+            colFreq = getCollectionFrequency(self.term, term_dict)
+            count = 1
+            for word in self.similarTerms:
+                count += 1
+                colFreq += getCollectionFrequency(word, term_dict)
+            self.collectionTermFreq = colFreq * 1.0/count
+            self.__class__.termDictionary[self.term] = self
+        return self.collectionTermFreq
+
     @classmethod
     def clearTermStorage(cls):
         #Used for clearing termDictionary after a query

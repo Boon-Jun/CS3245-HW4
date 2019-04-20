@@ -31,7 +31,7 @@ def findDocContainingPartialPhrase(phraseTermsList, size, term_dict, postings, s
             break
     return docSet
 
-def processSingleWordQuery(term, term_dict, postings, vector_lengths):
+def processSingleWordQuery(term, term_dict, postings, vector_lengths, doc_word_count):
     '''
         After processing single word terms returns a list of [docId, scores]
         sorted in order of increasing relevance. One document is more relevant
@@ -66,7 +66,7 @@ def processSingleWordQuery(term, term_dict, postings, vector_lengths):
     #print topList
     return topList
 
-def processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict = False):
+def processFreeTextQuery(termsList, term_dict, postings, vector_lengths, doc_word_count, strict = False):
     filteredTermsList =  filterStopWords(termsList)
     totalNumberOfDocs = getTotalNumberOfDocs(postings)
     queryTermSet = {}
@@ -93,6 +93,8 @@ def processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict 
     for size in range(len(filteredTermsList), len(filteredTermsList) - 1 if strict else 0 , -1):#size is the length of the partial phrase that we are going to search
         scores = {}
         docSet = findDocContainingPartialPhrase(filteredTermsList, size, term_dict, postings, strict)
+
+        '''
         #Calculates dot product of query length and document length(without normalization)
         #Note that only documents that have matching stems to the query will be considered
         #in the calculation of the dot product.
@@ -104,12 +106,24 @@ def processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict 
                 if docId in docSet:
                     if docId not in scores:
                         scores[docId] = 0
-                    scores[docId] += queryWeights[term] * (1 + math.log10(posting[1]))
+                    scores[docId] += queryWeights[term] * (1 + math.log10(posting[1]))#tf-idf
 
         #Normalization for docIds to obtain the final score for each document
         for docId in scores:
             scores[docId] = scores[docId]/getVectorLength(docId, vector_lengths)
+        '''
 
+        for term in filteredTermsList:
+            postingList = ThesaurusTermWrapper(term, termsList).generatePostingsList(term_dict, postings)
+            colTermFreq = ThesaurusTermWrapper(term, termsList).generateCollectionTermFrequency(term_dict)
+            #postingList = loadPostingList(term, term_dict, postings)
+            for posting in postingList:
+                docId = posting[0]
+                if docId in docSet:
+                    if docId not in scores:
+                        scores[docId] = 1
+                    #scores[docId] *= 0.99 * (posting[1]/doc_word_count[docId]) + 0.01 * (colTermFreq/119741975)#mixture model
+                    scores[docId] *= 0.99 * (posting[1]/doc_word_count[docId]) + 0.01 * (queryTermSet[term][1]/totalNumberOfDocs)#Modified mixture model
         #Retrieve Top 20 Documents with a heap
         # Top 20 items will be retrieved from the heap, first by highest score
         # and then by smallest docId, in the event that 2 documents have the same score.
@@ -126,16 +140,16 @@ def processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict 
             return relevantDocsList
     return relevantDocsList
 
-def processBooleanQuery(termsList, term_dict, postings, vector_lengths):
+def processBooleanQuery(termsList, term_dict, postings, vector_lengths, doc_word_count):
     #Some preprocessing to prepare for the calculation of query weights
     term_results = []
     for term in termsList:
         if type(term) is list:
             #term is a phrase, the whole phrase will be processed as a stricter version of free text query
             #where the WHOLE phrase must exist in a document
-            term_results.append(sorted(processFreeTextQuery(term, term_dict, postings, vector_lengths, strict = False)))
+            term_results.append(sorted(processFreeTextQuery(term, term_dict, postings, vector_lengths, doc_word_count, strict = False)))
         else:
-            term_results.append(sorted(processSingleWordQuery(term, term_dict, postings, vector_lengths)))
+            term_results.append(sorted(processSingleWordQuery(term, term_dict, postings, vector_lengths, doc_word_count)))
 
     andOutput = term_results[0]
     for x in range(1, len(term_results)):
@@ -150,7 +164,7 @@ def processBooleanQuery(termsList, term_dict, postings, vector_lengths):
         meanScoredOutput.append([item[0], sum/len(item) - 1])
     return [pair[0] for pair in sorted(meanScoredOutput, key = lambda pair:(pair[1], -pair[0]))]
 
-def executeSearch(queryString, term_dict, postings, vector_lengths):
+def executeSearch(queryString, term_dict, postings, vector_lengths, doc_word_count):
     isBooleanQuery = False
     termsList = queryString.split()
 
@@ -170,14 +184,14 @@ def executeSearch(queryString, term_dict, postings, vector_lengths):
                     newFreeText.append(subterm)
             else:
                 newFreeText.append(term)
-        result =  [pair[0] for pair in processFreeTextQuery(newFreeText, term_dict, postings, vector_lengths, strict = False)]
+        result =  [pair[0] for pair in processFreeTextQuery(newFreeText, term_dict, postings, vector_lengths, doc_word_count, strict = False)]
         #result = processBooleanQuery(termsList, term_dict, postings, vector_lengths)
     else:
         #We will treat this as a free text query
         termsList = phraseToTermsList(queryString)
         print "freetext" + str(termsList)
         #result = processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict = False)
-        result = [pair[0] for pair in processFreeTextQuery(termsList, term_dict, postings, vector_lengths, strict = False)]
+        result = [pair[0] for pair in processFreeTextQuery(termsList, term_dict, postings, vector_lengths, doc_word_count, strict = False)]
 
     print "Execution Time:" + str(time.time() - startTime) + "s"
     ThesaurusTermWrapper.clearTermStorage()

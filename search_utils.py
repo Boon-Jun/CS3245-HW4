@@ -47,3 +47,10 @@ def filterHighIdf(term, term_dict):
         return freq
     else:
         return 0
+
+def getCollectionFrequency(term, term_dict):
+    stemmedTerm = stemmer.stem(term)
+    try:
+        return term_dict[stemmedTerm][2]
+    except KeyError as e:
+        return 0  
