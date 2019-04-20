@@ -117,7 +117,7 @@ def andPosIndex(docLists, postList, window):
 
 def orPosIndex(docList, postList):
     #docList OR postList2
-    #docLists is a list of [docId, [term_positions]]
+    #docLists is a list of [docId, term_freq, [term_positions]]
     list1Size = len(docList)
     list2Size = len(postList)
     pos1 = 0;
@@ -142,7 +142,7 @@ def orPosIndex(docList, postList):
             output.append(item1)
             pos1 += 1
         else:
-            output.append([docId2, item2[1], item2[2]])
+            output.append(item2)
             pos2 += 1
 
     while pos1 < list1Size:
@@ -150,8 +150,7 @@ def orPosIndex(docList, postList):
         pos1 += 1
 
     while pos2 < list2Size:
-        item2 = postList[pos2]
-        output.append([item2[0], item2[1], item2[2]])
+        output.append(postList[pos2])
         pos2 += 1
 
     return output
