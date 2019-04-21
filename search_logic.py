@@ -30,6 +30,18 @@ def findDocContainingPartialPhrase(phraseTermsList, size, term_dict, postings):
             break
     return docSet
 
+
+def singleBubbleSortPass(docIdResultsList, courts_dict):
+    #Bubbles documents with higher courts priority up the list
+    for x in range(len(docIdResultsList) - 1):
+        docId1 = docIdResultsList[x]
+        docId2 = docIdResultsList[x + 1]
+        if getCourtsPriority(docId2, courts_dict) > getCourtsPriority(docId1, courts_dict):
+            #Swap the docId
+            docIdResultsList[x] = docId2
+            docIdResultsList[x + 1] = docId1
+    return docIdResultsList
+
 def processSingleWordQuery(term, term_dict, postings, vector_lengths):
     '''
         NOTE: This function is originally used for the processing of boolean
@@ -61,17 +73,6 @@ def processSingleWordQuery(term, term_dict, postings, vector_lengths):
 
     topList = sorted(([scores[docId], docId] for docId in scores), key = lambda pair:(-pair[0], pair[1]))
     return topList
-
-def singleBubbleSortPass(docIdResultsList, courts_dict):
-    #Bubbles documents with higher courts priority up the list
-    for x in range(len(docIdResultsList) - 1):
-        docId1 = docIdResultsList[x]
-        docId2 = docIdResultsList[x + 1]
-        if getCourtsPriority(docId2, courts_dict) > getCourtsPriority(docId1, courts_dict):
-            #Swap the docId
-            docIdResultsList[x] = docId2
-            docIdResultsList[x + 1] = docId1
-    return docIdResultsList
 
 def processFreeTextQuery(termsList, term_dict, postings, vector_lengths):
     filteredTermsList =  filterStopWords(termsList)
@@ -209,7 +210,7 @@ def executeSearch(queryString, term_dict, postings, vector_lengths, courts_dict)
     startTime = time.time()
 
     newFreeText = []
-    for term in queryString.split():
+    for term in queryString.split(): #Parse boolean queries into free text if required
         newTerm = term.strip('"')
         if newTerm != "" and newTerm != "AND":
             newFreeText.append(newTerm)

@@ -143,6 +143,10 @@ them in the same manner. The High level algorithm is as follows
 
 3. Repeat the whole process for partial phrases of the size of 2 and 1
 
+Another thing to take note is that during the execution of FreeText Queries, all
+stopwords will be removed from the query due to the long query time when trying to
+process stopwords.
+
 ============================== OUR Baseline ==============================
 VSM Model, ranking done with what was described in the previous section. The following
 are our performance from the 3 given queries

@@ -34,6 +34,7 @@ class PseudoRF():
             reweightedQuery[term] *= beta/len(self.results)
 
         for term in self.queryVector:
+            #Add the component from the original query vector into the reweighted query
             if term not in reweightedQuery:
                 reweightedQuery[term] = 0
             reweightedQuery[term] += self.queryVector[term] * alpha
@@ -65,7 +66,7 @@ class PseudoRF():
                 if docId not in self.foundId:
                     if docId not in scores:
                         scores[docId] = 0
-                    #Scores are calculated with the lnc.ltc ranking scheme    
+                    #Scores are calculated with the lnc.ltc ranking scheme
                     scores[docId] += reweightedQuery[term] * (1 + math.log10(posting[1]))
 
         #Normalize all the documentId scores
