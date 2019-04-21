@@ -6,9 +6,12 @@ from nltk.corpus import stopwords
 
 stemmer = PorterStemmer()
 stopWords = set(stopwords.words('english'))
-def queryStringToPhraseAndTermsList(queryString):
-    #Retrieves terms and phrases from query string
-    termsAndPhraseList = queryString.split('"')
+def queryStringToPhraseAndTermsList(booleanQueryString):
+    #Retrieves terms and phrases from query string.
+    #This is mainly for the parsing of boolean queries
+
+    #Split the string by double-colons first. This helps us identify the phrases
+    termsAndPhraseList = booleanQueryString.split('"')
     termsList = []
     for i in range(len(termsAndPhraseList)):
         if i%2:
@@ -23,18 +26,12 @@ def queryStringToPhraseAndTermsList(queryString):
     return termsList
 
 def phraseToTermsList(phrase):
-    #Converts a phrase to a list of stemmed terms
+    #Converts a phrase to a list of terms
     termsList = phrase.strip('"').split()
-    #filteredList = []
-    #for term in termsList:
-    #    if term not in stopWords:
-    #        filteredList.append(term)
-    #for i in range(len(termsList)):
-    #    termsList[i] = stemmer.stem(termsList[i].lower())
     return termsList
 
 def filterStopWords(termsList):
-    #Converts a phrase to a list of stemmed terms
+    #Remove all stop words from list of terms
     filteredList = []
     for term in termsList:
         if term not in stopWords:

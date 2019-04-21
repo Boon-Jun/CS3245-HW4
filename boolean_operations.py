@@ -1,9 +1,15 @@
 
+'''
+    This file contains multiple boolean boolean_operations
+    Each boolean operation has its own very specific use case
+    and is not for any general use.
+'''
+
 
 def hasSkipPointer(item):
     return type(item) is tuple and len(item) == 4
 
-def andDocLists(docList1, docList2):
+def andV1(docList1, docList2):
     #docList1 AND docList2
     #docList is a list of [docId, tf-idf1, tf-idf2, ...]
     #returns a new list of docList [docId, tf-idf1, tf-idf2, ...]
@@ -31,7 +37,7 @@ def andDocLists(docList1, docList2):
             pos2 += 1
     return output
 
-def orDocLists(docList1, docList2):
+def orV1(docList1, docList2):
     #docList1 AND docList2
     #docList is a list of [docId, tf-idf1, tf-idf2, ...]
     #returns a new list of docList [docId, tf-idf1, tf-idf2, ...]
@@ -74,11 +80,12 @@ def orDocLists(docList1, docList2):
 
     return output
 
-def andPosIndex(docLists, postList, window):
+def andV2(docLists, postList, window):
     #docLists AND postList
     #docLists is a list of [docId, [previous_term_positions]]
     #postList (docId, term_freq, posIndex, [skip pointer])
     #window specifies the maximum distance between 2 terms, hence allowing proximity search
+    #returns list of [docId, term_positions]]
     list1Size = len(docLists)
     list2Size = len(postList)
     pos1 = 0;
@@ -103,7 +110,7 @@ def andPosIndex(docLists, postList, window):
                         term_end_positions.append(position + 1)
             if len(term_end_positions) > 0:
                 term_end_positions = sorted(term_end_positions)
-                output.append([docId1, term_end_positions])#Keeps track of the ending position of a term
+                output.append([docId1, term_end_positions])
             pos1 += 1
             pos2 += 1
         elif docId1 < docId2:
@@ -115,9 +122,10 @@ def andPosIndex(docLists, postList, window):
                 pos2 += 1
     return output
 
-def orPosIndex(docList, postList):
+def orV2(docList, postList):
     #docList OR postList2
     #docLists is a list of [docId, term_freq, [term_positions]]
+    #returns list of [docId, term_freq, [term_positions]]
     list1Size = len(docList)
     list2Size = len(postList)
     pos1 = 0;
