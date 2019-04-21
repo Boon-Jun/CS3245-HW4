@@ -1,4 +1,4 @@
-This is the README file for A0000000X-A0000000X's submission
+This is the README file for A0170229J-A0000000X's submission
 
 
 == Python Version ==
@@ -8,7 +8,7 @@ this assignment.
 
 
 ==================== Allocation of work ========================
-A0000000X is in charge of the implementation of indexing logic
+A0170229J is in charge of the implementation of indexing logic
 A0000000X is in charge of implementing the main search logic and query refinement techniques
 
 
@@ -17,49 +17,64 @@ A0000000X is in charge of implementing the main search logic and query refinemen
 Indexing Algorithm:
 --------------------
 
-Indexing is done in- memory first and then written into the file at the very end.
-The postings are stored in a dictionary with the terms are the keys and a list of postings is the value to each term.
-The dictionary of terms is stored in a dicitonary with the terms as the keys and the
-tuple of (byte_offset, document_frequency) as the values.
+Indexing is done in-memory first and then written into the file at the very end.
+The postings are stored in a dictionary where the terms are the keys and a list of postings is the value to each term.
+Each posting is a tuple of (document id, term frequency, position list).
+
+The dictionary of terms is stored in a dictionary with the terms as the keys and the
+tuple of (byte offset, document frequency, collection frequency) as the values.
 
 The documents are indexed as follows:
 
-1) Document Ids in the directory are are parsed to integers and sorted
+1) Python csv module is used to parse the csv file into a dictionary of doc_ids
+mapped to dictionaries of documents (whose keys are the fields). There are a handful of document pairs
+whose doc_ids are the same, with the only difference between them being the courtnames. For these
+documents they are mapped to the same key in the dictionary of documents, with the court name being a 
+tuple of court names instead of a single court name.
 
 2) Preprocess the text in each document.
+	i) Concatenate all the fields in a document into a single text. We did this as there 
+	was not much purpose to indexing the fields separately except for courtnames. 
+	Firstly, the courtnames were given to us categorized by their relevance. This could be used
+	to sort the results by relevance. Secondly, the small set of courtnames could mean that
+	they can be used to preprocess the results before VSM search. 
+
+	Dates were also considered for separate indexing. This is because we felt that searching by 
+	dates may be a common use case in a legal setting. However, extracting dates from each document 
+	made the indexing process much slower, exceeding the 5 hours indexing time limit. Therefore this idea was abandoned.
+	
 	i) Prepare the text by replacing '\n' characters in text with ' '
 	ii) Apply the NLTK sentence tokenizer
 	iii) Replace all non alphanumeric characters in sentence with space. This step ensures that
 	the terms in the sentences are normalized. This has to be done as the word tokenizer fails
 	to remove unnecessary symbols from words frequently leading to reduced term frequency
 	of a word.
-	iv) Word Tokenize each sentece with NLTK sentence tokenizer
+	iv) Word Tokenize each sentence with NLTK sentence tokenizer
 	v) Case fold each token
 	vi) Apply the NLTK Porter Stemmer
+	v) Append the courtname as a separate term to the stemmed tokens, so that it will
+	have its own postings list in the index.
 
 3a) For each term, if the term is new, add the term to the dictionary and the postings.
-Then add the occuring Document Id (if it has not already been added) and Term frequency
+Then add the occurring Document Id (if it has not already been added) and Term frequency
  into the corresponding postings list in the postings and update the document frequency
 in the dictionary.
 
-3b) Keep track of the term frequency of every term in the document with a python dictionary.
-Update the term  frequencies as a term is encountered, creating new keys in the dictionary as newer
-terms are encountered.
+3b) If the term is not a courtname, keep track of the term frequency and the positional list of every term 
+in the document with a python dictionary. Update the term frequencies and positional list as a term is encountered, 
+creating new keys in the dictionary as newer terms are encountered.
 
 3c) Using the term frequencies, compute the tf values for every term and then compute the document
 vector lengths which will be used for computing document scores in the Vector Space Model.
 Vector lengths we calculated by taking the square root of the sum of the squares of the tf values
-for a document. Vector lengths are stored in a python dicitonary with the keys being the document ids.
+for a document. Vector lengths are stored in a python dictionary with the keys being the document ids.
+Note that courtnames are not part of VSM. 
 
 3) Then, add approximately sqrt(document_frequency) evenly spaced skip pointers
 to every postings list in the postings, in the form of a list index to a document_id to its right,
-accompanying the select Document Ids. Document Ids with skip pointers will be tuples
-of the form: (document_id, term_frequency,  skip_index). This way, an entire posting list can be loaded as a python list
-when searching and skips will be performed by accessing the element in the list at the specified skip index.
+accompanying the select Document Ids. Document Ids with skip pointers will be tuples of the form: (document_id, term_frequency, positional list,  skip_index). This way, an entire posting list can be loaded as a python list when searching and skips will be performed by accessing the element in the list at the specified skip index.
 
-
-4) Write the list of all sorted Document Ids to the top of the postings file. This will be used
-for NOT queries.
+4) Write the list of all sorted Document Ids to the top of the postings file. 
 
 5) While writing the postings list for each term in the postings file, fill the byte_offset value of
 where it is written in the file from the start, in each corresponding term in the dictionary. This
@@ -143,7 +158,7 @@ of the query, and the following are the performance measures of such an implemen
 MAF2:  0.1829879703
 MAP: 0.1253270719
 
-This implementation performs worser than our Baseline and the reason for this is that
+This implementation performs worse than our Baseline and the reason for this is that
 the generation of synonyms without context results in a lot of synonyms that are actually
 unrelated to the query.
 
@@ -157,7 +172,7 @@ MAF2: 0.2872533973
 MAP: 0.1844737291
 
 While the performance measure still seem to indicate that this algorithm is performing
-slightly worser than our Baseline, this implementation is still able to perform
+slightly worse than our Baseline, this implementation is still able to perform
 reasonably well within the competition framework. Also, our performance measures
 is only estimated according to the 3 relevance judgements given to us, and hence,
 it is hard to conclude whether this implementation is better/worse than our Baseline.
@@ -221,7 +236,7 @@ Bonus.docx - Some records of our query refinement effort
 
 Please initial one of the following statements.
 
-[x] I, A0000000X-A0000000X, certify that I have followed the CS 3245 Information
+[x] I, A0170229J-A0000000X, certify that I have followed the CS 3245 Information
 Retrieval class guidelines for homework assignments.  In particular, I
 expressly vow that I have followed the Facebook rule in discussing
 with others in doing the assignment and did not take notes (digital or

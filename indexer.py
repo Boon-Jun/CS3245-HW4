@@ -1,3 +1,4 @@
+from __future__ import division
 import csv
 from date_extractor import extract_dates
 import math
@@ -31,7 +32,11 @@ def index(input_file, output_file_dictionary, output_file_postings):
 	documents = {}
 	
 	# List of courts
-	courts = []	
+	courts = []
+
+	# Dictionary of doc_ids mapped to list of tuples
+	# A tuple : (term, tf-idf)
+	doc_vectors = {}
 
 	reload(sys)
 	sys.setdefaultencoding('utf8')
@@ -54,7 +59,21 @@ def index(input_file, output_file_dictionary, output_file_postings):
 	
 	doc_ids.sort();
 	print(str(doc_ids))
-	# Every term in the dictionary is mapped to a tuple (byte_offset, doc_freq)
+	
+	# Write Doc_id to courts mapping to file
+	doc_id_to_courts = {}
+	for doc_id in doc_ids:
+		doc_id_to_courts[str(doc_id)] = documents[str(doc_id)]['court']		
+
+	doc_id_to_courts_file = open("doc_id_to_courts.txt", "wb")
+	pickle.dump(doc_id_to_courts, doc_id_to_courts_file)
+	doc_id_to_courts_file.flush()
+	doc_id_to_courts_file.close()
+
+	print("Doc_id_to_courts file written!")
+
+
+	# Every term in the dictionary is mapped to a tuple (byte_offset, doc_freq, col_freq)
 	dictionary = {}
 	# Every term in the index is mapped to a postings list
 	# Every posting in a postings list is the following tuple :
@@ -76,11 +95,6 @@ def index(input_file, output_file_dictionary, output_file_postings):
 		
 		# Extract meta_info from doc
 		meta_info = []
-		#datetimes = extract_dates(text)
-		
-		#for datetime in datetimes:
-		#	if (datetime != None):
-		#		meta_info.append(Field(str(datetime.date())))
 		if document['court'] != None:
 			if isinstance(document['court'], tuple):
 				meta_info.append(Field(document['court'][0]))
@@ -175,7 +189,8 @@ def index(input_file, output_file_dictionary, output_file_postings):
 	
 	print("Skip pointers added in memory!")	
 
-	# Write dictionary and index
+
+	# Get sorted list of dictionary terms
 	offset = 0
 	postings_file = open(output_file_postings, "w")
 	sorted_terms = dictionary.keys()
@@ -192,7 +207,7 @@ def index(input_file, output_file_dictionary, output_file_postings):
 	# Write index to postings file and corresponding
         # byte offset to dictionary file
 	for k in sorted_terms:
-		dictionary[k] = (offset,dictionary[k][1])
+		dictionary[k] = (offset, dictionary[k][1], dictionary[k][2])
 		postings_file.write(str(index[k]) + '\n')
 		offset = postings_file.tell()
 	postings_file.flush()
@@ -207,7 +222,7 @@ def index(input_file, output_file_dictionary, output_file_postings):
 	dictionary_file.close()
 
 	print("Dictionary file written!")
-	
+
 	# Write document vector lengths to lengths file
 	lengths_file = open("lengths.txt", "wb")
 	pickle.dump(lengths, lengths_file)
@@ -215,22 +230,7 @@ def index(input_file, output_file_dictionary, output_file_postings):
 	lengths_file.close()
 	
 	print("Lengths file written!")
-				
-	plaintext_postings_file = open("plaintext_postings.txt", "wb")
-	for term in sorted_terms:
-		plaintext_postings_file.write(str(term) + "\n")
-		plaintext_postings_file.write(str(index[term]) + "\n")
-
-	print("Plaintext_postings file written!")
-
-	# Write document word counts to word_counts file
-	word_counts_file = open("word_counts.txt", "wb")
-	pickle.dump(doc_id_to_word_count, word_counts_file)
-	word_counts_file.flush()
-	word_counts_file.close()
 	
-	print("Word_counts file written!")
-
 	# Write court names to courts file
 	courts_file = open("courts.txt", "wb")
 	courts_file.write(str(courts))
@@ -238,3 +238,20 @@ def index(input_file, output_file_dictionary, output_file_postings):
 	courts_file.close()
 	
 	print("Courts file written!")
+	
+	# Write plain text versions of data structures to files			
+	plaintext_postings_file = open("plaintext_postings.txt", "wb")
+	for term in sorted_terms:
+		plaintext_postings_file.write(str(term) + "\n")
+		plaintext_postings_file.write(str(index[term]) + "\n")
+
+	print("Plaintext_postings file written!")
+
+	plaintext_dict_file = open("plaintext_dict.txt", "wb")
+	for term in sorted_terms:
+		plaintext_dict_file.write(str(term) + '\n')
+		plaintext_dict_file.write(str(dictionary[str(term)]) + '\n')
+
+	print("Plaintext dictionary file written!")
+
+
