@@ -29,20 +29,20 @@ The documents are indexed as follows:
 1) Python csv module is used to parse the csv file into a dictionary of doc_ids
 mapped to dictionaries of documents (whose keys are the fields). There are a handful of document pairs
 whose doc_ids are the same, with the only difference between them being the courtnames. For these
-documents they are mapped to the same key in the dictionary of documents, with the court name being a 
+documents they are mapped to the same key in the dictionary of documents, with the court name being a
 tuple of court names instead of a single court name.
 
 2) Preprocess the text in each document.
-	i) Concatenate all the fields in a document into a single text. We did this as there 
-	was not much purpose to indexing the fields separately except for courtnames. 
+	i) Concatenate all the fields in a document into a single text. We did this as there
+	was not much purpose to indexing the fields separately except for courtnames.
 	Firstly, the courtnames were given to us categorized by their relevance. This could be used
 	to sort the results by relevance. Secondly, the small set of courtnames could mean that
-	they can be used to preprocess the results before VSM search. 
+	they can be used to preprocess the results before VSM search.
 
-	Dates were also considered for separate indexing. This is because we felt that searching by 
-	dates may be a common use case in a legal setting. However, extracting dates from each document 
+	Dates were also considered for separate indexing. This is because we felt that searching by
+	dates may be a common use case in a legal setting. However, extracting dates from each document
 	made the indexing process much slower, exceeding the 5 hours indexing time limit. Therefore this idea was abandoned.
-	
+
 	i) Prepare the text by replacing '\n' characters in text with ' '
 	ii) Apply the NLTK sentence tokenizer
 	iii) Replace all non alphanumeric characters in sentence with space. This step ensures that
@@ -60,21 +60,21 @@ Then add the occurring Document Id (if it has not already been added) and Term f
  into the corresponding postings list in the postings and update the document frequency
 in the dictionary.
 
-3b) If the term is not a courtname, keep track of the term frequency and the positional list of every term 
-in the document with a python dictionary. Update the term frequencies and positional list as a term is encountered, 
+3b) If the term is not a courtname, keep track of the term frequency and the positional list of every term
+in the document with a python dictionary. Update the term frequencies and positional list as a term is encountered,
 creating new keys in the dictionary as newer terms are encountered.
 
 3c) Using the term frequencies, compute the tf values for every term and then compute the document
 vector lengths which will be used for computing document scores in the Vector Space Model.
 Vector lengths we calculated by taking the square root of the sum of the squares of the tf values
 for a document. Vector lengths are stored in a python dictionary with the keys being the document ids.
-Note that courtnames are not part of VSM. 
+Note that courtnames are not part of VSM.
 
 3) Then, add approximately sqrt(document_frequency) evenly spaced skip pointers
 to every postings list in the postings, in the form of a list index to a document_id to its right,
 accompanying the select Document Ids. Document Ids with skip pointers will be tuples of the form: (document_id, term_frequency, positional list,  skip_index). This way, an entire posting list can be loaded as a python list when searching and skips will be performed by accessing the element in the list at the specified skip index.
 
-4) Write the list of all sorted Document Ids to the top of the postings file. 
+4) Write the list of all sorted Document Ids to the top of the postings file.
 
 5) While writing the postings list for each term in the postings file, fill the byte_offset value of
 where it is written in the file from the start, in each corresponding term in the dictionary. This
@@ -100,7 +100,7 @@ We will also document both the MAF2(Mean Average F2) and MAP(Mean Average Precis
 metric here to talk about the performance of our search engine
  as we explain the high level algorithm that we have implemented
 
-====================Ranking by lnc.ltc ranking scheme================
+====================== Ranking by lnc.ltc ranking scheme ======================
 The documents will be ranked according to the lnc.ltc ranking scheme.
 That is to say that the weights of each term in the document will be calculated as :
 (1 + log10(term_frequency_in_documents))
@@ -116,13 +116,13 @@ normalization for the query since the computation of the cosine normalization
 for the query will reduce the calculated scores by the same factor, and the
 actual ranking of the documents will not be affected.
 
-===============Parsing of Boolean to FreeText Queries==================
+=================== Parsing of Boolean to FreeText Queries ====================
 From our experimentation with different techniques, we found that treating boolean
 queries as FreeText query provides better results in most cases.
 To convert a Boolean query to a FreeText query, we simply concatenate all the terms
 with a space in between to create a FreeText.
 
-===============Execution of FreeText Queries====================
+======================= Execution of FreeText Queries =========================
 Since all types of queries are now considered as FreeText, we can execute all of
 them in the same manner. The High level algorithm is as follows
 
@@ -143,14 +143,14 @@ them in the same manner. The High level algorithm is as follows
 
 3. Repeat the whole process for partial phrases of the size of 2 and 1
 
-=============Baseline================
+============================== OUR Baseline ==============================
 VSM Model, ranking done with what was described in the previous section. The following
 are our performance from the 3 given queries
 
 MAF2: 0.3031148884
 MAP: 0.2182651002
 
-=============== Query Expansion with Princeton's Wordnet ==============
+=============== Query Expansion with Princeton's Wordnet ===============
 When experimenting with Query Expansion of the Princeton’s wordnet.
 We started with the generation of synonymous terms without considerations of the context
 of the query, and the following are the performance measures of such an implementation.
@@ -201,15 +201,51 @@ by changing the IDF weighting. To account for this problem we decided to take th
 to generate a new "document-frequency" for this new posting list and it seems like this approach is able
 to work moderately well within the competition framework.
 
-=============== Language Model(Mixture Model) ==============
+============================== Zones and Fields ==============================
+In our implementation of the search engine, we did not consider any zones as we are
+unable to identify any which could be potentially significant that could affect
+the ranking of documents. However, we still implemented some sorting according
+to the Courts Hierarchy.
+
+While sorting according to the Courts Hierarchy, we wanted to ensure that the ranking of the
+documents estimated via the VSM is not largely distorted by the Courts Hierarchy.
+To do so, we chose to sort the list of documents(After ranking with the VSM)
+partially with 10 passes of bubble sort.
+
+The reason we chose to use bubble sort is because in most_situations, one pass
+of bubble sort only affects the ranking of the documents in close proximity to each other.
+We assume that documents that are in close proximity to each other to be largely equivalent
+in relevance, and therefore, sorting them with the first few passes of bubble sort
+will affect the ranking of the documents via the VSM minimally.
+
+There is no specific reason why we chose to have 10 bubble sort passes and it
+is a number that was arbitrarily chosen.
+
+The following are the performance measures after the implementation:
+MAF2: 0.2975042902
+MAP: 0.2453292886
+
+MAF2 is still slightly worse when compared to the Baseline. However the accuracy
+of our search engine has clearly improved by taking Courts Hierarchy into account.
+
+In our opinion, we feel that the same thing to sort the documents chronologically.
+However we did not have the chance to implement this due to time constraints.
+
+
+=============== Other things we tried =================
+- Language Model(Mixture Model)
 We also tried implementing a probabilistic model for our search engine, building upon the
-Mixture mod
-More specifically, we implemented the mixture model as discussed within the lecture notes.
-However, it seems like the VSM approach is able to perform slightly better than the mixture model.
-Therefore, we chose to discard this approach.
+Mixture model discussed within the lecture notes.
+
+However, it seems like the VSM approach is able to perform slightly better than the mixture model,
+even after some attempts at tuning it. Therefore, we chose to discard this approach.
 
 MAF2: 0.2232954263
 MAP: 0.2138418508
+
+- Pseudo Relevance Feedback
+Our results will be discussed in Bonus.docx
+
 
 == Files included with this submission ==
 README.txt - This file
@@ -221,6 +257,7 @@ postings.txt - Postings List of each term specified in dictionary.txt
 postings_plaintext.txt - Contains a human readable index with dictionary word and
 			corresponding posting list
 lengths.txt - Stores a dictionary of document vector lengths
+doc_id_to_courts.txt - Stores a mapping of each document to the "Courts" field
 
 search.py - Required file for submission
 search_logic.py - Main implementation of search logic
