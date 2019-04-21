@@ -194,16 +194,20 @@ def processBooleanQuery(termsList, term_dict, postings, vector_lengths):
     return [pair[0] for pair in sorted(meanScoredOutput, key = lambda pair:(pair[1], -pair[0]))]
 
 def executeSearch(queryString, term_dict, postings, vector_lengths):
-    isBooleanQuery = False
 
     startTime = time.time()
 
+    newFreeText = []
+    for term in queryString.split():
+        newTerm = term.strip('"')
+        if newTerm != "" and newTerm != "AND":
+            newFreeText.append(newTerm)
 
-    #Determines whether if query is free text query or boolean query with phrases/terms
-    termsList = queryString.split()
-    if termsList and "AND" in termsList and "AND" != termsList[-1] and "AND" != termsList[0]:
-        isBooleanQuery = True
+    result =  [pair[0] for pair in processFreeTextQuery(newFreeText, term_dict, postings, vector_lengths)]
 
+    '''
+    #The following code logic is for the processing of boolean logic. But is no longer used
+    since we will be treating all boolean queries as freetext and the logic can therefore be simplified
     if isBooleanQuery:
         #Boolean queries with phrases
         termsList = queryStringToPhraseAndTermsList(queryString)
@@ -227,7 +231,7 @@ def executeSearch(queryString, term_dict, postings, vector_lengths):
 
         #Returns only the list of docIds
         result = [pair[0] for pair in processFreeTextQuery(termsList, term_dict, postings, vector_lengths)]
-
+    '''
     print "Execution Time:" + str(time.time() - startTime) + "s"
     #Clears list of terms stored within ThesaurusTermWrapper
     ThesaurusTermWrapper.clearTermStorage()

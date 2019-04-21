@@ -29,13 +29,13 @@ class ThesaurusTermWrapper():
 
     def expandTerm(self, term, context = None):
         if self.similarTerms == None:
-            filteredWords = set()
+            newWords = set()
             tagged_terms = []
             POS = None
             if context != None:
                 tagged_terms = pos_tag(context)
 
-        #Update part of speech
+            #Convert POS format to the one in synsets
             for item in tagged_terms:
                 if term == item[0]:
                     if item[1][0] == 'J':
@@ -50,20 +50,21 @@ class ThesaurusTermWrapper():
 
             '''
             #This was used when we were previously generating similar words without Lesk algorithm
+            #But only with POS tagging
             if POS != None:
                 synsets = wn.synsets(term, POS)
                 for synset in synsets:
                     for lemma in synset.lemmas():
-                        filteredWords.add(stemmer.stem(lemma.name()))
+                        newWords.add(stemmer.stem(lemma.name()))
             '''
             if context != None:
                 #Find similar words with Lesk algorithm
                 synset = lesk(context, term, pos = POS)
                 if synset is not None:
                     for lemma in synset.lemmas():
-                        filteredWords.add(lemma.name())
+                        newWords.add(lemma.name())
 
-            self.similarTerms = filteredWords
+            self.similarTerms = newWords
             self.__class__.termDictionary[self.term] = self
 
     def generatePostingsList(self, term_dict, postings):
