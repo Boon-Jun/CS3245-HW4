@@ -3,6 +3,41 @@ from nltk.stem.porter import PorterStemmer
 
 maxLength = None
 stemmer = PorterStemmer()
+
+highPrioritySet = {
+    'SG Court of Appeal',
+    'SG Privy Council',
+    'UK House of Lords'
+    'UK Supreme Court',
+    'High Court of Australia',
+    'CA Supreme Court]'
+}
+
+mediumPriorityList = {
+    'SG High Court',
+    'Singapore International Commercial Court',
+    'HK High Court',
+    'HK Court of First Instance',
+    'UK Crown Court',
+    'UK Court of Appeal',
+    'UK High Court',
+    'Federal Court of Australia',
+    'NSW Court of Appeal',
+    'NSW Court of Criminal Appeal',
+    'NSW Supreme Court'
+}
+
+def getCourtsPriority(docId, courts_dict):
+    try:
+        courts = courts_dict[str(docId)]
+        if courts in highPrioritySet:
+            return 2
+        elif courts in mediumPriorityList:
+            return 1
+        else:
+            return 0
+    except KeyError as e:
+        return 0
 def loadPostingList(term, term_dict, postings):
     stemmedTerm = stemmer.stem(term)
     byteOffset = 0
@@ -60,4 +95,4 @@ def getCollectionFrequency(term, term_dict):
     try:
         return term_dict[stemmedTerm][2]
     except KeyError as e:
-        return 0  
+        return 0

@@ -62,6 +62,17 @@ def processSingleWordQuery(term, term_dict, postings, vector_lengths):
     topList = sorted(([scores[docId], docId] for docId in scores), key = lambda pair:(-pair[0], pair[1]))
     return topList
 
+def singleBubbleSortPass(docIdResultsList, courts_dict):
+    #Bubbles documents with higher courts priority up the list
+    for x in range(len(docIdResultsList) - 1):
+        docId1 = docIdResultsList[x]
+        docId2 = docIdResultsList[x + 1]
+        if getCourtsPriority(docId2, courts_dict) > getCourtsPriority(docId1, courts_dict):
+            #Swap the docId
+            docIdResultsList[x] = docId2
+            docIdResultsList[x + 1] = docId1
+    return docIdResultsList
+
 def processFreeTextQuery(termsList, term_dict, postings, vector_lengths):
     filteredTermsList =  filterStopWords(termsList)
     totalNumberOfDocs = getTotalNumberOfDocs(postings)
@@ -108,7 +119,7 @@ def processFreeTextQuery(termsList, term_dict, postings, vector_lengths):
         for docId in scores:
             scores[docId] = scores[docId]/getVectorLength(docId, vector_lengths)
 
-        topList = sorted(([scores[docId], docId] for docId in scores), key = lambda pair:(-pair[0], pair[1]))
+        topList = sorted(([scores[docId] , docId] for docId in scores), key = lambda pair:(-pair[0], pair[1]))
         for pair in topList:
             docId = pair[1]
             if docId not in relevantDocsSet:
@@ -193,7 +204,7 @@ def processBooleanQuery(termsList, term_dict, postings, vector_lengths):
         meanScoredOutput.append([item[0], sum/(len(item) + 1)])
     return [pair[0] for pair in sorted(meanScoredOutput, key = lambda pair:(pair[1], -pair[0]))]
 
-def executeSearch(queryString, term_dict, postings, vector_lengths):
+def executeSearch(queryString, term_dict, postings, vector_lengths, courts_dict):
 
     startTime = time.time()
 
@@ -202,9 +213,13 @@ def executeSearch(queryString, term_dict, postings, vector_lengths):
         newTerm = term.strip('"')
         if newTerm != "" and newTerm != "AND":
             newFreeText.append(newTerm)
-
+    print newFreeText
     result =  [pair[0] for pair in processFreeTextQuery(newFreeText, term_dict, postings, vector_lengths)]
 
+    for x in range(10):
+        #Use bubble sort passes to "bubble" higher priority court documents up slightly
+        #without affecting the overall ranking greatly
+        result = singleBubbleSortPass(result, courts_dict)
     '''
     #The following code logic is for the processing of boolean logic. But is no longer used
     since we will be treating all boolean queries as freetext and the logic can therefore be simplified

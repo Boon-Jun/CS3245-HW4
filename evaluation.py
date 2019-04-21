@@ -82,10 +82,11 @@ relevantFile = open(file_of_relevant, "r")
 term_dict = pickle.load(open(dictionary_file, "rb"))
 postings = open(postings_file, "r")
 vector_lengths = pickle.load(open("lengths.txt", "rb"))
+courts_dict = pickle.load(open("doc_id_to_courts.txt", "rb"))
 
 query = relevantFile.readline()
 correctList = []
 for correctResult in relevantFile:
     correctList.append(int(correctResult))
-resultsList = search_logic.executeSearch(query, term_dict, postings, vector_lengths)
+resultsList = search_logic.executeSearch(query, term_dict, postings, vector_lengths, courts_dict)
 evaluateResult(correctList, resultsList)

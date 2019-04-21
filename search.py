@@ -39,9 +39,10 @@ outputFile = open(file_of_output, "w")
 term_dict = pickle.load(open(dictionary_file, "rb"))
 postings = open(postings_file, "r")
 vector_lengths = pickle.load(open("lengths.txt", "rb"))
+courts_dict = pickle.load(open("doc_id_to_courts.txt", "rb"))
 
 for query in queriesFile:
-    resultsList = search_logic.executeSearch(query, term_dict, postings, vector_lengths)
+    resultsList = search_logic.executeSearch(query, term_dict, postings, vector_lengths, courts_dict)
     if type(resultsList) is list:
         outputFile.write(' '.join(str(docId) for docId in resultsList) + '\n')
     else:
