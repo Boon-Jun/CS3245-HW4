@@ -6,6 +6,12 @@ This is the README file for A0000000X-A0000000X's submission
 I'm (We're) using Python Version <2.7.1 or replace version number> for
 this assignment.
 
+
+==================== Allocation of work ========================
+A0000000X is in charge of the implementation of indexing logic
+A0000000X is in charge of implementing the main search logic and query refinement techniques
+
+
 == General Notes about this assignment ==
 
 Indexing Algorithm:
@@ -76,8 +82,8 @@ within a document. The longer the phrase, the higher the document will rank.
 Ranking of the documents by phrase will take precedence of lnc.ltc
 
 We will also document both the MAF2(Mean Average F2) and MAP(Mean Average Precision)
-metric here to talk about our progress as we explain the high level algorithm that
-we have implemented
+metric here to talk about the performance of our search engine
+ as we explain the high level algorithm that we have implemented
 
 ====================Ranking by lnc.ltc ranking scheme================
 The documents will be ranked according to the lnc.ltc ranking scheme.
@@ -124,18 +130,71 @@ them in the same manner. The High level algorithm is as follows
 
 =============Baseline================
 VSM Model, ranking done with what was described in the previous section. The following
-are our results from the 3 given queries
+are our performance from the 3 given queries
 
 MAF2: 0.3031148884
-MAP: 0.2126508143
+MAP: 0.2182651002
 
 =============== Query Expansion with Princeton's Wordnet ==============
-We will be expanding each query term
+When experimenting with Query Expansion of the Princeton’s wordnet.
+We started with the generation of synonymous terms without considerations of the context
+of the query, and the following are the performance measures of such an implementation.
+
+MAF2:  0.1829879703
+MAP: 0.1253270719
+
+This implementation performs worser than our Baseline and the reason for this is that
+the generation of synonyms without context results in a lot of synonyms that are actually
+unrelated to the query.
+
+Next, we decide to implement query expansion with Lesk Algorithm(NLTK). Using our whole query
+as the context, we then pass both a term and the context into the algorithm to generate
+a set of synonyms. Because of the extra context, the set of generated synonyms are now
+much more relevant to the query, and the following are the performance measure for
+this specific implementation.
+
+MAF2: 0.2872533973
+MAP: 0.1844737291
+
+While the performance measure still seem to indicate that this algorithm is performing
+slightly worser than our Baseline, this implementation is still able to perform
+reasonably well within the competition framework. Also, our performance measures
+is only estimated according to the 3 relevance judgements given to us, and hence,
+it is hard to conclude whether this implementation is better/worse than our Baseline.
+
+============== Post processing of generated terms from Query Expansion ==================
+To process the generated terms after query expansion, one of the approach is to
+execute the search on the different generated terms directly after query expansion.
+For example if a term "A" expands into "B", "C" and "D", queries "A L", "B L", "C L"
+and "D L" will be executed separately.
+
+However, the previous approach could result in a query that takes a long time to process,
+especially if each term in a query can be expanded into many terms, resulting in
+many possible combinations of the query
+
+Therefore, our approach after generating to this is to merge the postings list of terms
+'A', 'B', 'C' and 'D' together before performing the query.
+
+However the latter approach itself also has some issues and that is after merging the terms
+together into one postings list, we will no longer be able to differentiate the document_frequencies
+for each term individually since the new postings-list is a postings-list not for a single term,
+but for multiple terms.
+
+Summing up all the document-frequencies of each term and treating the sum as the "document-frequnecy"
+of the new posting list is also problematic as it would affect the overall ranking of the documents
+by changing the IDF weighting. To account for this problem we decided to take the average document-frequency
+to generate a new "document-frequency" for this new posting list and it seems like this approach is able
+to work moderately well within the competition framework.
 
 =============== Language Model(Mixture Model) ==============
+We also tried implementing a probabilistic model for our search engine, building upon the
+Mixture mod
+More specifically, we implemented the mixture model as discussed within the lecture notes.
+However, it seems like the VSM approach is able to perform slightly better than the mixture model.
+Therefore, we chose to discard this approach.
 
-
-
+MAF2: 0.2232954263
+MAP: 0.2138418508
 
 == Files included with this submission ==
 README.txt - This file
@@ -146,15 +205,16 @@ dictionary.txt - Pickled dictionary of terms from the Reuters Training Dataset
 postings.txt - Postings List of each term specified in dictionary.txt
 postings_plaintext.txt - Contains a human readable index with dictionary word and
 			corresponding posting list
-lengths.txt - Stores a dictionary of document lengths
+lengths.txt - Stores a dictionary of document vector lengths
+
 search.py - Required file for submission
-            Usage of search.py now slightly differs from the original due to the
-						addition of lengths.txt file
-						As such, the correct usage of search.py file will now be:
-						python search.py -d dictionary-file -p postings-file -l length-file -q file-of-queries -o output-file-of-results
 search_logic.py - Main implementation of search logic
 query_parser.py - Contains simple query parser to split and stem a query string
 search_utils.py - Commonly used utility methods for searching
+boolean_operations.py - Contains boolean operations used throughout the program
+thesaurus_expansion.py - Contains main code logic that performs query expansion with Princeton's wordnet
+pseudo_relevance_feedback.py - Contains main code logic that performs pseudo relevance feedback. Not used in actual implementation
+Bonus.docx - Some records of our query refinement effort
 
 
 == Statement of individual work ==
@@ -179,5 +239,5 @@ I suggest that I should be graded as follows:
 == References ==
 
 Forums on IVLE - Compare Search Results
-python's heapq documentation and source code - Helps us understand the nlargest method
-CS3245 lecture note 7 for the indexing and search algorithm for VSM
+CS3245 lecture notes for the indexing and search algorithm
+Stack Overflow for Lesk Algorithm

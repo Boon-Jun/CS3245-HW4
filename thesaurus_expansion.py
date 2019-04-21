@@ -67,6 +67,8 @@ class ThesaurusTermWrapper():
             self.__class__.termDictionary[self.term] = self
 
     def generatePostingsList(self, term_dict, postings):
+        # Returns a merged postings list of the original term and
+        # the other terms similar(synonymous) to it.
         if self.postingsList == None:
             expandedTermSet = set()
             postingsList = loadPostingList(self.term, term_dict, postings)
