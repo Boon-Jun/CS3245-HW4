@@ -97,7 +97,7 @@ def processFreeTextQuery(termsList, term_dict, postings, vector_lengths):
     relevantDocsSet = set()
     relevantDocsList = []
     found = 0
-    for size in range(min(len(filteredTermsList),4), 0, -1):
+    for size in range(min(len(filteredTermsList),3), 0, -1):
         # size is the length of the partial phrase that we are going to search
         # the maximum possible size of the partial phrase is arbitrarily set at 4
         # to ensure that the query can be completed on time
@@ -209,8 +209,17 @@ def executeSearch(queryString, term_dict, postings, vector_lengths, courts_dict)
 
     startTime = time.time()
 
+    # Replace all non-alphanum, non-space chars in each sentence with space
+    new_query = []
+    for c in queryString:
+        if c.isalnum() or c.isspace():
+            new_query.append(c)
+        else:
+            new_query.append('')
+    new_query = ''.join(new_query)
+
     newFreeText = []
-    for term in queryString.split(): #Parse boolean queries into free text if required
+    for term in new_query.split(): #Parse boolean queries into free text if required
         newTerm = term.strip('"')
         if newTerm != "" and newTerm != "AND":
             newFreeText.append(newTerm)
