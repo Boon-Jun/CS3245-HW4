@@ -4,6 +4,9 @@ from nltk.stem.porter import PorterStemmer
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 
+# Look for extra packages in nltk_data folder 
+nltk.data.path.append("./nltk_data")
+
 stemmer = PorterStemmer()
 stopWords = set(stopwords.words('english'))
 def queryStringToPhraseAndTermsList(booleanQueryString):

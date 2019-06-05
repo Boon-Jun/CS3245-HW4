@@ -18,6 +18,9 @@ except getopt.GetoptError, err:
     usage()
     sys.exit(2)
 
+reload(sys)
+sys.setdefaultencoding('utf-8')
+
 for o, a in opts:
     if o == '-d':
         dictionary_file  = a
@@ -34,8 +37,6 @@ if dictionary_file == None or postings_file == None or file_of_queries == None o
     usage()
     sys.exit(2)
 
-reload(sys)
-sys.setdefaultencoding('utf-8')
 queriesFile = open(file_of_queries, "r")
 outputFile = open(file_of_output, "w")
 term_dict = pickle.load(open(dictionary_file, "rb"))

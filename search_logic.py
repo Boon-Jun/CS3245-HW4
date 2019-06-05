@@ -209,7 +209,6 @@ def executeSearch(queryString, term_dict, postings, vector_lengths, courts_dict)
 
     startTime = time.time()
 
-    # Replace all non-alphanum, non-space chars in each sentence with space
     new_query = []
     for c in queryString:
         if c.isalnum() or c.isspace():
@@ -217,9 +216,9 @@ def executeSearch(queryString, term_dict, postings, vector_lengths, courts_dict)
         else:
             new_query.append(' ')
     new_query = ''.join(new_query)
-
+    
     newFreeText = []
-    for term in new_query.split(): #Parse boolean queries into free text if required
+    for term in queryString.split(): #Parse boolean queries into free text if required
         newTerm = term.strip('"')
         if newTerm != "" and newTerm != "AND":
             newFreeText.append(newTerm)

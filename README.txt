@@ -22,7 +22,7 @@ The postings are stored in a dictionary where the terms are the keys and a list 
 Each posting is a tuple of (document id, term frequency, position list).
 
 The dictionary of terms is stored in a dictionary with the terms as the keys and the
-tuple of (byte offset, document frequency, collection frequency) as the values.
+tuple of (byte offset, document frequency) as the values.
 
 The documents are indexed as follows:
 
@@ -126,22 +126,22 @@ with a space in between to create a FreeText.
 Since all types of queries are now considered as FreeText, we can execute all of
 them in the same manner. The High level algorithm is as follows
 
-1. First we find all documents with that contains partial phrases up to a size of 4
+1. First we find all documents with that contains partial phrases up to a size of 3
    (We limit the size of phrases here due to the possiblity of long queries which can greatly increase query time)
-	 1.1 With the list of documents that have partial phrases up to a size of 4, we will
+	 1.1 With the list of documents that have partial phrases up to a size of 3, we will
 	 		 then rank only these documents via the lnc.ltc ranking scheme
 
 	 1.2 Any documents returned will be appended to a relevant documents list by the
 	     lnc.ltc ranking scheme
 
-2. Next we find all documents with that contains partial phrases up to a size of 3
-		2.1 With the list of documents that have partial phrases up to a size of 3, we will
+2. Next we find all documents with that contains partial phrases up to a size of 2
+		2.1 With the list of documents that have partial phrases up to a size of 2, we will
 		    then rank only these documents via the lnc.ltc ranking scheme
     2.2 Any documents returned will be appended to a relevant documents list by the
 		    lnc.ltc ranking scheme. Since the documents are appended to the list, the
 				order of documents already within the list will not be affected
 
-3. Repeat the whole process for partial phrases of the size of 2 and 1
+3. Repeat the whole process for single tokens
 
 Another thing to take note is that during the execution of FreeText Queries, all
 stopwords will be removed from the query due to the long query time when trying to
@@ -258,8 +258,6 @@ index.py - Required file for submission
 indexer.py - Perfoms the indexing of directory of documents.
 dictionary.txt - Pickled dictionary of terms from the Reuters Training Dataset
 postings.txt - Postings List of each term specified in dictionary.txt
-postings_plaintext.txt - Contains a human readable index with dictionary word and
-			corresponding posting list
 lengths.txt - Stores a dictionary of document vector lengths
 doc_id_to_courts.txt - Stores a mapping of each document to the "Courts" field
 
@@ -294,6 +292,6 @@ I suggest that I should be graded as follows:
 
 == References ==
 
-Forums on IVLE - Compare Search Results
 CS3245 lecture notes for the indexing and search algorithm
-Stack Overflow for Lesk Algorithm
+Stack Overflow for our idea on Lesk Algorithm
+NLTK Library documentations on how to access Princeton's Wordnet

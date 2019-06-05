@@ -1,6 +1,5 @@
 from __future__ import division
 import csv
-from date_extractor import extract_dates
 import math
 import nltk
 from nltk.tokenize import word_tokenize, sent_tokenize
@@ -11,6 +10,9 @@ from os.path import join, isfile
 import pickle
 import sys
 import traceback
+
+# Look for extra packages in nltk_data folder 
+nltk.data.path.append("./nltk_data")
 
 class Field:
 	value = None
@@ -207,7 +209,7 @@ def index(input_file, output_file_dictionary, output_file_postings):
 	# Write index to postings file and corresponding
         # byte offset to dictionary file
 	for k in sorted_terms:
-		dictionary[k] = (offset, dictionary[k][1], dictionary[k][2])
+		dictionary[k] = (offset, dictionary[k][1])
 		postings_file.write(str(index[k]) + '\n')
 		offset = postings_file.tell()
 	postings_file.flush()
