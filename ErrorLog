@@ -1,0 +1,115 @@
+Started at: Wed Apr 17 22:17:01 2019 SGT
+[1] python3 search.py -d dictionary.txt -p postings.txt -q ../queries/q1.txt -o output.1.txt
+Seconds elapsed for task [1]: 2, exit status 256
+[nltk_data] Downloading package stopwords to
+[nltk_data]     /home/wing.nus/nltk_data...
+[nltk_data]   Package stopwords is already up-to-date!
+quiet AND "phone call"
+Traceback (most recent call last):
+File "search.py", line 595, in <module>
+  results = evaluate_boolean(query)
+File "search.py", line 510, in evaluate_boolean
+  relevant_docs = final.evaluate(final=True).result()
+File "search.py", line 130, in evaluate
+  self.operands = list(map(convert_to_postinglist, self.operands))
+File "search.py", line 73, in convert_to_postinglist
+  return posting_list_for_phrase(operand)
+File "search.py", line 93, in posting_list_for_phrase
+  posting_lists = tuple(map(get_posting_list, phrase_tokens))
+File "search.py", line 90, in get_posting_list
+  return pickle.loads(postings_file.read(pointers.size))
+EOFError: Ran out of input
+[2] ../eval.pl -q output.1.txt ../queries/q1rel.txt > result.1.txt
+[3] python3 search.py -d dictionary.txt -p postings.txt -q ../queries/q2.txt -o output.2.txt
+Seconds elapsed for task [3]: 3, exit status 256
+[nltk_data] Downloading package stopwords to
+[nltk_data]     /home/wing.nus/nltk_data...
+[nltk_data]   Package stopwords is already up-to-date!
+prostitute AND "forced sex" AND payment
+Traceback (most recent call last):
+File "search.py", line 595, in <module>
+  results = evaluate_boolean(query)
+File "search.py", line 510, in evaluate_boolean
+  relevant_docs = final.evaluate(final=True).result()
+File "search.py", line 130, in evaluate
+  self.operands = list(map(convert_to_postinglist, self.operands))
+File "search.py", line 73, in convert_to_postinglist
+  return posting_list_for_phrase(operand)
+File "search.py", line 93, in posting_list_for_phrase
+  posting_lists = tuple(map(get_posting_list, phrase_tokens))
+File "search.py", line 90, in get_posting_list
+  return pickle.loads(postings_file.read(pointers.size))
+EOFError: Ran out of input
+[4] ../eval.pl -q output.2.txt ../queries/q2rel.txt > result.2.txt
+[5] python3 search.py -d dictionary.txt -p postings.txt -q ../queries/q3.txt -o output.3.txt
+Seconds elapsed for task [5]: 3, exit status 256
+[nltk_data] Downloading package stopwords to
+[nltk_data]     /home/wing.nus/nltk_data...
+[nltk_data]   Package stopwords is already up-to-date!
+pretend to be officer
+Traceback (most recent call last):
+File "search.py", line 593, in <module>
+  results = evaluate_free_text(query)
+File "search.py", line 358, in evaluate_free_text
+  map(lambda x: tf_idf_query(x, query_words), query_words_unique))
+File "search.py", line 358, in <lambda>
+  map(lambda x: tf_idf_query(x, query_words), query_words_unique))
+File "search.py", line 262, in tf_idf_query
+  df = get_posting_list(token).count
+File "search.py", line 296, in get_posting_list
+  return pickle.loads(postings_file.read(pointers.size))
+EOFError: Ran out of input
+[6] ../eval.pl -q output.3.txt ../queries/q3rel.txt > result.3.txt
+[7] python3 search.py -d dictionary.txt -p postings.txt -q ../queries/q4.txt -o output.4.txt
+Seconds elapsed for task [7]: 3, exit status 256
+[nltk_data] Downloading package stopwords to
+[nltk_data]     /home/wing.nus/nltk_data...
+[nltk_data]   Package stopwords is already up-to-date!
+"fertility treatment" AND damages
+Traceback (most recent call last):
+File "search.py", line 595, in <module>
+  results = evaluate_boolean(query)
+File "search.py", line 510, in evaluate_boolean
+  relevant_docs = final.evaluate(final=True).result()
+File "search.py", line 130, in evaluate
+  self.operands = list(map(convert_to_postinglist, self.operands))
+File "search.py", line 81, in convert_to_postinglist
+  return (pickle.loads(postings_file.read(pointers.size)),
+EOFError: Ran out of input
+[8] ../eval.pl -q output.4.txt ../queries/q4rel.txt > result.4.txt
+[9] python3 search.py -d dictionary.txt -p postings.txt -q ../queries/q5.txt -o output.5.txt
+Seconds elapsed for task [9]: 3, exit status 256
+[nltk_data] Downloading package stopwords to
+[nltk_data]     /home/wing.nus/nltk_data...
+[nltk_data]   Package stopwords is already up-to-date!
+publish hurt son
+Traceback (most recent call last):
+File "search.py", line 593, in <module>
+  results = evaluate_free_text(query)
+File "search.py", line 358, in evaluate_free_text
+  map(lambda x: tf_idf_query(x, query_words), query_words_unique))
+File "search.py", line 358, in <lambda>
+  map(lambda x: tf_idf_query(x, query_words), query_words_unique))
+File "search.py", line 262, in tf_idf_query
+  df = get_posting_list(token).count
+File "search.py", line 296, in get_posting_list
+  return pickle.loads(postings_file.read(pointers.size))
+EOFError: Ran out of input
+[10] ../eval.pl -q output.5.txt ../queries/q5rel.txt > result.5.txt
+[11] python3 search.py -d dictionary.txt -p postings.txt -q ../queries/q6.txt -o output.6.txt
+Seconds elapsed for task [11]: 3, exit status 256
+[nltk_data] Downloading package stopwords to
+[nltk_data]     /home/wing.nus/nltk_data...
+[nltk_data]   Package stopwords is already up-to-date!
+"good grades" AND exchange AND scandal
+Traceback (most recent call last):
+File "search.py", line 595, in <module>
+  results = evaluate_boolean(query)
+File "search.py", line 510, in evaluate_boolean
+  relevant_docs = final.evaluate(final=True).result()
+File "search.py", line 130, in evaluate
+  self.operands = list(map(convert_to_postinglist, self.operands))
+File "search.py", line 81, in convert_to_postinglist
+  return (pickle.loads(postings_file.read(pointers.size)),
+EOFError: Ran out of input
+[12] ../eval.pl -q output.6.txt ../queries/q6rel.txt > result.6.txt

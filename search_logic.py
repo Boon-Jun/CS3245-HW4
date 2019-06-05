@@ -215,7 +215,7 @@ def executeSearch(queryString, term_dict, postings, vector_lengths, courts_dict)
         if c.isalnum() or c.isspace():
             new_query.append(c)
         else:
-            new_query.append('')
+            new_query.append(' ')
     new_query = ''.join(new_query)
 
     newFreeText = []
